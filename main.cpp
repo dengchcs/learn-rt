@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
     world.push_back(std::make_shared<sphere>(point_t{0, -100.5, -1}, 100, material_ground));
     world.push_back(std::make_shared<sphere>(point_t{0, 0, -1},      0.5, material_center));
     world.push_back(std::make_shared<sphere>(point_t{-1, 0, -1},     0.5, material_left));
+    world.push_back(std::make_shared<sphere>(point_t{-1, 0, -1},    -0.4, material_left));
     world.push_back(std::make_shared<sphere>(point_t{1, 0, -1},      0.5, material_right));
 
     std::string path = "../images/" + current_time() + ".ppm";

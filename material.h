@@ -64,11 +64,22 @@ public:
         attenuation = {1, 1, 1};
         const float eta_ratio = record.outside ? (1.0f / eta_) : eta_;
         const auto refraction = refract(ray_in.direction(), record.normal, eta_ratio);
-        const auto out_dire = refraction.value_or(unit_vec3{
-                reflect(ray_in.direction(), record.normal)
-        });
 
-        scattered = {record.point, out_dire};
+        auto reflectance = [&]() {
+            const float cos_theta = std::min(QVector3D::dotProduct(-ray_in.direction(), record.normal), 1.0f);
+            auto r0 = (1 - eta_ratio) / (1 + eta_ratio);
+            r0 = r0 * r0;
+            return r0 + (1 - r0) * std::pow(1 - cos_theta, 5);
+        };
+
+        vec3_t out;
+        if (!refraction.has_value() || reflectance() > random_float()) {
+            out = reflect(ray_in.direction(), record.normal);
+        } else {
+            out = refraction.value();
+        }
+
+        scattered = {record.point, out};
         return true;
     }
 };

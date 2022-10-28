@@ -22,16 +22,18 @@ public:
     [[nodiscard]] point_t center() const {
         return center_;
     }
+
     [[nodiscard]] float radius() const {
         return radius_;
     }
+
 public:
-    sphere(const point_t& center, float radius, std::shared_ptr<material> m)
-    : center_(center), radius_(radius), pmat(std::move(m)) {
+    sphere(const point_t &center, float radius, std::shared_ptr<material> m)
+            : center_(center), radius_(radius), pmat(std::move(m)) {
 
     }
 
-    [[nodiscard]] std::optional<hit_record> hit(const ray& r, float tmin, float tmax) const override {
+    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin, float tmax) const override {
         const vec3_t oc = r.origin() - center_;
         const float a = 1;
         const float b = 2.0f * QVector3D::dotProduct(oc, r.direction());
@@ -54,9 +56,10 @@ public:
         record.ray_param = root;
         record.point = r.point_at(record.ray_param);
         record.normal = unit_vec3{record.point - center_};
+        if (radius_ < 0) record.normal *= -1;
         record.outside = QVector3D::dotProduct(r.direction(), record.normal) < 0;
+        if (!record.outside) record.normal *= -1;
         record.pmat = pmat;
-        if (! record.outside) record.normal *= -1;
         return record;
     }
 };
