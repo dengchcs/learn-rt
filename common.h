@@ -21,5 +21,7 @@ using vec3_t = QVector3D;
 using point_t = QVector3D;
 
 constexpr auto g_infinity = std::numeric_limits<float>::max();
+constexpr float g_pi = 3.141592653589793238462643383279502884;
+
 
 #endif //RT_COMMON_H

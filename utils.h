@@ -36,6 +36,14 @@ point_t random_in_unit_sphere() {
     }
 }
 
+vec3_t random_in_unit_disk() {
+    while (true) {
+        const vec3_t vec = {random_float(-1, 1), random_float(-1, 1), 0};
+        if (vec.lengthSquared() >= 1) continue;
+        return vec;
+    }
+}
+
 unit_vec3 random_unit_vec() {
     return unit_vec3{random_in_unit_sphere()};
 }

@@ -14,7 +14,7 @@ class material {
 public:
     /**
      * @param attenuation r,g,b三色光分别的反射率
-     * @param scattered 反射光线
+     * @param scattered 反/折射光线
      */
     virtual bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation, ray &scattered) const = 0;
 };

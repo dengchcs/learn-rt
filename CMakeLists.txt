@@ -13,7 +13,7 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 find_package(Qt6 COMPONENTS Gui)
 
-add_executable(rt main.cpp viewport.h common.h hittable.h material.h ray.h sphere.h utils.h)
+add_executable(rt main.cpp common.h camera.h hittable.h material.h ray.h sphere.h utils.h)
 target_link_libraries(rt
         Qt::Core
         )
