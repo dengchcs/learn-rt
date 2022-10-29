@@ -17,7 +17,7 @@ class sphere : public hittable {
     point_t center_;
     float radius_;
 public:
-    std::shared_ptr<material> pmat;
+    std::shared_ptr<material> pmat_;
 public:
     [[nodiscard]] point_t center() const {
         return center_;
@@ -29,7 +29,7 @@ public:
 
 public:
     sphere(const point_t &center, float radius, std::shared_ptr<material> m)
-            : center_(center), radius_(radius), pmat(std::move(m)) {
+            : center_(center), radius_(radius), pmat_(std::move(m)) {
 
     }
 
@@ -59,7 +59,7 @@ public:
         if (radius_ < 0) record.normal *= -1;
         record.outside = QVector3D::dotProduct(r.direction(), record.normal) < 0;
         if (!record.outside) record.normal *= -1;
-        record.pmat = pmat;
+        record.pmat = pmat_;
         return record;
     }
 };

@@ -12,7 +12,7 @@ color_t ray_color(const ray &r, const world_t &world, int depth) {
     if (depth <= 0) {
         return {0, 0, 0};
     }
-    auto record = hit(world, r, 0.001, g_infinity);
+    auto record = hit(world, r, 0.001, g_infinity); // 忽略距离太近的光线
     if (record.has_value()) {
         ray scattered;
         color_t attenuation;
@@ -45,7 +45,7 @@ world_t random_world() {
                     world.push_back(std::make_shared<sphere>(center, 0.2, sphere_material));
                 } else if (choose_mat < 0.95) {
                     // metal
-                    vec3_t albedo = { random_float(0.5, 1), random_float(0.5, 1), random_float(0.5, 1) };
+                    vec3_t albedo = {random_float(0.5, 1), random_float(0.5, 1), random_float(0.5, 1)};
                     auto fuzz = random_float(0, 0.5);
                     sphere_material = std::make_shared<metal>(albedo, fuzz);
                     world.push_back(std::make_shared<sphere>(center, 0.2, sphere_material));
@@ -72,33 +72,42 @@ world_t random_world() {
 
 int main(int argc, char *argv[]) {
     constexpr float aspect_ratio = 3.0 / 2.0;
-    constexpr int width = 600;
+    constexpr int width = 300;
     constexpr int height = width / aspect_ratio;
 
-    const auto world = random_world();
+    // const auto world = random_world();
+    world_t world;
+    auto material_ground = std::make_shared<lambertian>(color_t{0.2, 0.8, 0.2});
+    world.push_back(std::make_shared<sphere>(point_t{0, -100.5, 0}, 100, material_ground));
+    auto mat1 = std::make_shared<metal>(vec3_t(0.8, 0.8, 0.8), 0.0);
+    auto mat2 = std::make_shared<lambertian>(vec3_t{0.8, 0.6, 0.4});
+    auto mat3 = std::make_shared<dielectric>(1.5);
+    world.push_back(std::make_shared<sphere>(point_t(-0.6, 0, -1), -0.5, mat2));
+    world.push_back(std::make_shared<sphere>(point_t(0.6, 0, -1), -0.5, mat3));
 
-    constexpr point_t eye{13, 2, 3};
-    constexpr point_t center{0, 0, 0};
+    constexpr point_t eye{0, 0, 0};
+    constexpr point_t center{0, 0, -1};
     constexpr vec3_t up{0, 1, 0};
-    const float dist_to_focus = 10;
-    constexpr float aperture = 0.1f;
-    camera cam(eye, center, up, g_pi / 9.0, aspect_ratio, aperture, dist_to_focus);
+    constexpr float dist_to_focus = 1;
+    constexpr float aperture = 2.0f;
+    camera cam(eye, center, up, g_pi / 2.0, aspect_ratio, aperture, dist_to_focus);
 
     std::string path = "../images/" + current_time() + ".ppm";
     std::ofstream file(path);
     file << "P3\n" << width << " " << height << "\n255\n";
 
     auto start = std::chrono::steady_clock::now();
-    constexpr int samples_per_pixel = 50;
-    constexpr int max_depth = 10;
+    constexpr int samples_per_pixel = 500;
+    constexpr int max_depth = 100;
     for (int j = height - 1; j >= 0; j--) {
         qDebug() << "\r scan lines remaining: " << j << ' ';
         for (int i = 0; i < width; i++) {
+            // 抗锯齿: 对每个像素作多次采样取平均值
             color_t color;
             for (int s = 0; s < samples_per_pixel; s++) {
-                const float u = ((float)i + random_float()) / (width - 1);
-                const float v = ((float)j + random_float()) / (height - 1);
-                ray r = cam.get_ray(u, v);
+                const float u = ((float) i + random_float()) / (width - 1);
+                const float v = ((float) j + random_float()) / (height - 1);
+                ray r = cam.get_ray_no_blur(u, v);
                 color += ray_color(r, world, max_depth);
             }
             write_color(file, color, samples_per_pixel);
