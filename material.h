@@ -50,7 +50,7 @@ public:
     vec3_t albedo_;
     float fuzz_;    // 模糊程度
 public:
-    metal(const vec3_t &albedo, float f) : albedo_(albedo) {
+    explicit metal(const vec3_t &albedo, float f = 0) : albedo_(albedo) {
         fuzz_ = clamp(f, 0, 1);
     }
 

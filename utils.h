@@ -24,6 +24,16 @@ float random_float(float lower = 0, float upper = 1) {
 }
 
 /**
+ * @brief 生成[a, b]闭区间内的随机整数
+ */
+int random_int(int lower, int upper) {
+    std::uniform_int_distribution<int> dist(lower, upper);
+    static std::random_device rd;
+    static std::default_random_engine re(rd());
+    return dist(re);
+}
+
+/**
  * @brief 在[xmin, xmax)^3的立方体内部随机采样一点(包含表面)
  */
 inline point_t random_in_cube(float xmin, float xmax) {

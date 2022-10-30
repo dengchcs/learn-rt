@@ -1,4 +1,5 @@
 #include "common.h"
+#include "bvh_node.h"
 #include "camera.h"
 #include "material.h"
 #include "ray.h"
@@ -18,6 +19,23 @@ color_t ray_color(const ray &r, const world_t &world, int depth) {
         color_t attenuation;
         if (record->pmat->scatter(r, record.value(), attenuation, scattered)) {
             return attenuation * ray_color(scattered, world, depth - 1);
+        }
+        return color_t{0, 0, 0};
+    }
+    float t = (r.direction().y() + 1.0f) / 2.0f;
+    return (1.0f - t) * color_t{1.0, 1.0, 1.0} + t * color_t{0.5, 0.7, 1.0};
+}
+
+color_t ray_color(const ray &r, const bvh_node &bvh, int depth) {
+    if (depth <= 0) {
+        return {0, 0, 0};
+    }
+    auto record = bvh.hit(r, 0.001, g_infinity);    // 忽略距离太近的光线
+    if (record.has_value()) {
+        ray scattered;
+        color_t attenuation;
+        if (record->pmat->scatter(r, record.value(), attenuation, scattered)) {
+            return attenuation * ray_color(scattered, bvh, depth - 1);
         }
         return color_t{0, 0, 0};
     }
@@ -75,22 +93,35 @@ int main(int argc, char *argv[]) {
     constexpr int width = 300;
     constexpr int height = width / aspect_ratio;
 
-    // const auto world = random_world();
+    /*
+    const auto world = random_world();
+    point_t lookfrom(13, 2, 3);
+    point_t lookat(0, 0, 0);
+    vec3_t vup(0, 1, 0);
+    float dist_to_focus = 10.0;
+    float aperture = 0.1;
+    camera cam(lookfrom, lookat, vup, g_pi / 9.0, aspect_ratio, aperture, dist_to_focus);
+    */
+
+
     world_t world;
     auto material_ground = std::make_shared<lambertian>(color_t{0.2, 0.8, 0.2});
     world.push_back(std::make_shared<sphere>(point_t{0, -100.5, 0}, 100, material_ground));
-    auto mat1 = std::make_shared<metal>(vec3_t(0.8, 0.8, 0.8), 0.0);
-    auto mat2 = std::make_shared<lambertian>(vec3_t{0.8, 0.6, 0.4});
-    auto mat3 = std::make_shared<dielectric>(1.5);
-    world.push_back(std::make_shared<sphere>(point_t(-0.6, 0, -1), -0.5, mat2));
-    world.push_back(std::make_shared<sphere>(point_t(0.6, 0, -1), -0.5, mat3));
-
-    constexpr point_t eye{0, 0, 0};
+    auto mat1 = std::make_shared<dielectric>(1.5);
+    auto mat2 = std::make_shared<lambertian>(vec3_t{1.0, 0.4, 0.4});
+    auto mat3 = std::make_shared<metal>(vec3_t{0.2, 0.5, 0.8}, 0.1);
+    world.push_back(std::make_shared<sphere>(point_t(-1, 0, -1), 0.5, mat1));
+    world.push_back(std::make_shared<sphere>(point_t(-1, 0, -1), -0.45, mat1));
+    world.push_back(std::make_shared<sphere>(point_t(0, 0, -1), 0.5, mat2));
+    world.push_back(std::make_shared<sphere>(point_t(1, 0, -1), 0.5, mat3));
+    constexpr point_t eye{3, 3, 2};
     constexpr point_t center{0, 0, -1};
     constexpr vec3_t up{0, 1, 0};
-    constexpr float dist_to_focus = 1;
+    const float dist_to_focus = (eye - center).length();
     constexpr float aperture = 2.0f;
-    camera cam(eye, center, up, g_pi / 2.0, aspect_ratio, aperture, dist_to_focus);
+    camera cam(eye, center, up, g_pi / 9.0, aspect_ratio, aperture, dist_to_focus);
+
+    const bvh_node bvh{world, 0, world.size()};
 
     std::string path = "../images/" + current_time() + ".ppm";
     std::ofstream file(path);
@@ -108,7 +139,8 @@ int main(int argc, char *argv[]) {
                 const float u = ((float) i + random_float()) / (width - 1);
                 const float v = ((float) j + random_float()) / (height - 1);
                 ray r = cam.get_ray_no_blur(u, v);
-                color += ray_color(r, world, max_depth);
+                // color += ray_color(r, world, max_depth);
+                color += ray_color(r, bvh, max_depth);
             }
             write_color(file, color, samples_per_pixel);
         }
