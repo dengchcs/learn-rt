@@ -98,6 +98,6 @@ int main(int argc, char *argv[]) {
     };
     tracer my_tracer{config, cam};
 
-    std::string path = "../images/" + current_time() + ".ppm";
-    my_tracer.trace(world, path);
+    std::string path = "../images/" + current_time() + ".png";
+    my_tracer.trace_png(world, path);
 }
