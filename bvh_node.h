@@ -11,6 +11,8 @@
 #include "hittable.h"
 #include "utils.h"
 
+#include <algorithm>
+
 /**
  * BVH树, 划分轴是随机选取的
  */

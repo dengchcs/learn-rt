@@ -36,8 +36,8 @@ public:
     [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin, float tmax) const override {
         const vec3_t oc = r.origin() - center_;
         const float a = 1;
-        const float b = 2.0f * QVector3D::dotProduct(oc, r.direction());
-        const float c = oc.lengthSquared() - radius_ * radius_;
+        const float b = 2.0f * oc.dot(r.direction());
+        const float c = oc.len_sq() - radius_ * radius_;
         const float discriminant = b * b - 4 * a * c;
         if (discriminant < 0) {
             return std::nullopt;
@@ -57,7 +57,7 @@ public:
         record.point = r.point_at(record.ray_param);
         record.normal = unit_vec3{record.point - center_};
         if (radius_ < 0) record.normal *= -1;
-        record.outside = QVector3D::dotProduct(r.direction(), record.normal) < 0;
+        record.outside = r.direction().dot(record.normal) < 0;
         if (!record.outside) record.normal *= -1;
         record.pmat = pmat_;
         return record;

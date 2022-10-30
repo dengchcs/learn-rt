@@ -10,7 +10,9 @@
 #include "camera.h"
 #include "hittable.h"
 #include "material.h"
-#include <QDebug>
+#include <execution>
+#include <iostream>
+#include <fstream>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
@@ -64,7 +66,10 @@ private:
              << static_cast<int>(256 * clamp(b, 0, 0.999)) << '\n';
     }
 
-    void write_color(int row, int col, color_t pixel) {
+    /**
+     * @brief 写入一个像素, 图像左上角为起点
+     */
+    void write_color(int row, int col, const color_t &pixel) {
         auto r = pixel.x(), g = pixel.y(), b = pixel.z();
         const float scale = 1.0f / (float) config_.samples_per_pixel;
         r = std::sqrt(r * scale);   // Gamma Correction (gamma = 0.5), gamma越小图片越亮
@@ -79,13 +84,13 @@ private:
 
 public:
     void trace(const world_t &world, const std::string &path) {
-        qDebug() << "writing data_ to " << path.c_str() << ".\n";
+        std::cout << "writing data_ to " << path << ".\n";
         auto start = std::chrono::steady_clock::now();
         std::ofstream file(path);
         file << "P3\n" << config_.width << " " << config_.height << "\n255\n";
         bvh_node bvh{world, 0, world.size()};
         for (int j = config_.height - 1; j >= 0; j--) {
-            qDebug() << "lines remaining: " << j;
+            std::cout << "lines remaining: " << j << "\n";
             for (int i = 0; i < config_.width; i++) {
                 color_t color{0, 0, 0};
                 for (int s = 0; s < config_.samples_per_pixel; s++) {
@@ -99,17 +104,17 @@ public:
         }
         file.close();
         auto end = std::chrono::steady_clock::now();
-        qDebug() << "\ndone in " << std::chrono::duration<double>(end - start).count() << "s.";
+        std::cout << "\ndone in " << std::chrono::duration<double>(end - start).count() << "s.\n";
     }
 
     void trace_png(const world_t &world, const std::string &path) {
-        qDebug() << "writing data to " << path.c_str() << ".\n";
+        std::cout << "writing data to " << path << ".\n";
         auto start = std::chrono::steady_clock::now();
         delete data_;
         data_ = new unsigned char[config_.width * config_.height * 3];
         bvh_node bvh{world, 0, world.size()};
         for (int j = config_.height - 1; j >= 0; j--) {
-            qDebug() << "lines remaining: " << j;
+            std::cout << "lines remaining: " << j << "\n";
             for (int i = 0; i < config_.width; i++) {
                 color_t color{0, 0, 0};
                 for (int s = 0; s < config_.samples_per_pixel; s++) {
@@ -124,7 +129,36 @@ public:
         }
         stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
         auto end = std::chrono::steady_clock::now();
-        qDebug() << "\ndone in " << std::chrono::duration<double>(end - start).count() << "s.";
+        std::cout << "\ndone in " << std::chrono::duration<double>(end - start).count() << "s.\n";
+    }
+
+    void trace_png_parallel(const world_t &world, const std::string &path) {
+        std::cout << "writing data to " << path << ".\n";
+        auto start = std::chrono::steady_clock::now();
+        delete data_;
+        data_ = new unsigned char[config_.width * config_.height * 3];
+        bvh_node bvh{world, 0, world.size()};
+
+        std::vector<int> range(config_.width * config_.height);
+        std::generate(std::execution::par, range.begin(), range.end(), [n = 0]() mutable { return n++; });
+        std::for_each(
+                std::execution::par,
+                range.begin(), range.end(),
+                [&](int index) {
+                    const int row = index / config_.width;
+                    const int col = index % config_.width;
+                    color_t color{0, 0, 0};
+                    for (int s = 0; s < config_.samples_per_pixel; s++) {
+                        const float u = ((float) col + random_float()) / (float) config_.width;
+                        const float v = ((float) (config_.height - 1 - row) + random_float()) / (float) config_.height;
+                        ray r = cam_.get_ray(u, v);
+                        color += ray_color(r, bvh, config_.max_depth);
+                    }
+                    write_color(row, col, color);
+                });
+        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
+        auto end = std::chrono::steady_clock::now();
+        std::cout << "\ndone in " << std::chrono::duration<double>(end - start).count() << "s.\n";
     }
 };
 

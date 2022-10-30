@@ -15,7 +15,7 @@ world_t random_world() {
             auto choose_mat = random_float();
             point_t center(a + 0.9f * random_float(), 0.2, b + 0.9f * random_float());
 
-            if ((center - point_t(4, 0.2, 0)).length() > 0.9) {
+            if ((center - point_t(4, 0.2, 0)).len() > 0.9) {
                 std::shared_ptr<material> sphere_material;
 
                 if (choose_mat < 0.8) {
@@ -66,31 +66,31 @@ world_t simple_world() {
 
 int main(int argc, char *argv[]) {
     constexpr float aspect_ratio = 3.0 / 2.0;
-    constexpr int width = 300;
+    constexpr int width = 1200;
     constexpr int height = width / aspect_ratio;
 
-/*
+
     const auto world = random_world();
-    constexpr point_t lookfrom{2, 3, 13};
-    constexpr point_t lookat{0, 0, 0};
-    constexpr vec3_t vup{0, 1, 0};
+    const point_t lookfrom{13, 2, 3};
+    const point_t lookat{0, 0, 0};
+    const vec3_t vup{0, 1, 0};
     const float dist_to_focus = 10.0;
     const float aperture = 0.1;
     camera cam(lookfrom, lookat, vup, g_pi / 9.0, aspect_ratio, aperture, dist_to_focus);
+
+
+/*
+    const auto world = simple_world();
+    const point_t eye{3, 3, 2};
+    const point_t center{0, 0, -1};
+    const vec3_t up{0, 1, 0};
+    const float dist_to_focus = (eye - center).len();
+    const float aperture = 2.0f;
+    camera cam(eye, center, up, g_pi / 9.0, aspect_ratio, aperture, dist_to_focus);
 */
 
-
-    const auto world = simple_world();
-    constexpr point_t eye{3, 3, 2};
-    constexpr point_t center{0, 0, -1};
-    constexpr vec3_t up{0, 1, 0};
-    const float dist_to_focus = (eye - center).length();
-    constexpr float aperture = 2.0f;
-    camera cam(eye, center, up, g_pi / 9.0, aspect_ratio, aperture, dist_to_focus);
-
-
     constexpr int samples_per_pixel = 500;
-    constexpr int max_depth = 100;
+    constexpr int max_depth = 50;
     tracer::config config{
             width, height,
             samples_per_pixel,
@@ -99,5 +99,5 @@ int main(int argc, char *argv[]) {
     tracer my_tracer{config, cam};
 
     std::string path = "../images/" + current_time() + ".png";
-    my_tracer.trace_png(world, path);
+    my_tracer.trace_png_parallel(world, path);
 }

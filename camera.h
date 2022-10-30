@@ -29,8 +29,8 @@ public:
         const float vp_height = 2.0f * std::tan(vfov / 2.0f) * focus_dist;
         const float vp_width = vp_height * aspect_ratio;
         const auto w = unit_vec3{eye - center};
-        const auto u = unit_vec3{QVector3D::crossProduct(up, w)};
-        const auto v = unit_vec3{QVector3D::crossProduct(w, u)};
+        const auto u = unit_vec3{up.cross(w)};
+        const auto v = unit_vec3{w.cross(u)};
         eye_ = eye;
         horizontal_ = vp_width * u;
         vertical_ = vp_height * v;

@@ -6,11 +6,12 @@
 #define RT_UTILS_H
 
 #include "common.h"
-#include <fstream>
 #include <random>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
+#include <optional>
+#include <sstream>
 
 inline float clamp(float x, float xmin, float xmax) {
     return std::max(xmin, std::min(x, xmax));
@@ -47,7 +48,7 @@ inline point_t random_in_cube(float xmin, float xmax) {
 point_t random_in_unit_sphere() {
     while (true) {
         const point_t point = random_in_cube(-1, 1);
-        if (point.lengthSquared() < 1) {
+        if (point.len_sq() < 1) {
             return point;
         }
     }
@@ -58,7 +59,7 @@ point_t random_in_unit_sphere() {
  */
 vec3_t random_in_hemisphere(const vec3_t &normal) {
     vec3_t vec = random_in_unit_sphere();
-    if (QVector3D::dotProduct(vec, normal) > 0) {
+    if (vec.dot(normal) > 0) {
         return vec;
     } else {
         return -vec;
@@ -71,7 +72,7 @@ vec3_t random_in_hemisphere(const vec3_t &normal) {
 point_t random_in_unit_disk() {
     while (true) {
         const point_t point = {random_float(-1, 1), random_float(-1, 1), 0};
-        if (point.lengthSquared() < 1) {
+        if (point.len_sq() < 1) {
             return point;
         }
     }
@@ -88,7 +89,7 @@ unit_vec3 random_unit_vec() {
  * @brief 计算反射光线的方向
  */
 vec3_t reflect(const vec3_t &vec, const unit_vec3 &normal) {
-    return vec - 2 * QVector3D::dotProduct(vec, normal) * normal;
+    return vec - 2 * vec.dot(normal) * normal;
 }
 
 /**
@@ -97,13 +98,13 @@ vec3_t reflect(const vec3_t &vec, const unit_vec3 &normal) {
  * @return 在没有折射发生时返回std::nullopt
  */
 std::optional<unit_vec3> refract(const unit_vec3 &vec, const unit_vec3 &normal, float eta_ratio) {
-    const float cos_theta = std::min(QVector3D::dotProduct(-vec, normal), 1.0f);
+    const float cos_theta = std::min(-vec.dot(normal), 1.0f);
     const float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
     if (sin_theta * eta_ratio > 1.0f) {
         return std::nullopt;
     };
     const vec3_t out_perp = eta_ratio * (vec + cos_theta * normal);
-    const vec3_t out_para = -std::sqrt(std::abs(1.0f - out_perp.lengthSquared())) * normal;
+    const vec3_t out_para = -std::sqrt(std::abs(1.0f - out_perp.len_sq())) * normal;
     return unit_vec3{out_perp + out_para};
 }
 

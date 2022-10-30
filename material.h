@@ -33,7 +33,7 @@ public:
         // vec3_t direction = record.normal + random_unit_vec();
 
         vec3_t direction = random_in_hemisphere(record.normal);
-        if (direction.lengthSquared() < 1e-16) {
+        if (direction.len_sq() < 1e-16) {
             direction = record.normal;
         }
         scattered = {record.point, direction};
@@ -58,7 +58,7 @@ public:
         const vec3_t reflected = reflect(ray_in.direction(), record.normal);
         scattered = {record.point, reflected + fuzz_ * random_in_unit_sphere()};
         attenuation = albedo_;
-        return QVector3D::dotProduct(scattered.direction(), record.normal) > 0;
+        return scattered.direction().dot(record.normal) > 0;
     }
 };
 
@@ -79,7 +79,7 @@ public:
 
         // 使用 Schlick's Approximation 计算反射率
         auto reflectance = [&]() {
-            const float cos_theta = std::min(QVector3D::dotProduct(-ray_in.direction(), record.normal), 1.0f);
+            const float cos_theta = std::min(-ray_in.direction().dot(record.normal), 1.0f);
             auto r0 = (1 - eta_ratio) / (1 + eta_ratio);
             r0 = r0 * r0;
             return r0 + (1 - r0) * std::pow(1 - cos_theta, 5);
