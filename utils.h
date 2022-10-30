@@ -107,19 +107,6 @@ std::optional<unit_vec3> refract(const unit_vec3 &vec, const unit_vec3 &normal, 
     return unit_vec3{out_perp + out_para};
 }
 
-void write_color(std::ofstream &file, color_t pixel, int samples_per_pixel = 1) {
-    auto r = pixel.x(), g = pixel.y(), b = pixel.z();
-
-    const float scale = 1.0f / samples_per_pixel;
-    r = std::sqrt(r * scale);   // Gamma Correction (gamma = 0.5), gamma越小图片越亮
-    g = std::sqrt(g * scale);
-    b = std::sqrt(b * scale);
-
-    file << static_cast<int>(256 * clamp(r, 0, 0.999)) << ' '
-         << static_cast<int>(256 * clamp(g, 0, 0.999)) << ' '
-         << static_cast<int>(256 * clamp(b, 0, 0.999)) << '\n';
-}
-
 std::string current_time() {
     std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     auto ltime = std::localtime(&t);
