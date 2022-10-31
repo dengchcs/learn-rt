@@ -2,15 +2,14 @@
 // Created by CD on 2022/10/31.
 //
 
-#ifndef RT_PARSER_H
-#define RT_PARSER_H
+#ifndef RT_PARSER_HPP
+#define RT_PARSER_HPP
 
-#include "sphere.h"
-#include "hittable.h"
-#include "material.h"
-#include "camera.h"
-#include "tracer.h"
-
+#include "camera.hpp"
+#include "hittable.hpp"
+#include "material.hpp"
+#include "sphere.hpp"
+#include "tracer.hpp"
 #include "deps/toml.hpp"
 #include <map>
 #include <string>
@@ -69,32 +68,61 @@ std::vector<float> parse_vec(const toml::array &arr, int start, int cnt) {
 }
 
 world_t make_scene(const std::string &file) {
-    auto config = toml::parse_file(file);
-    auto& materials = *config.get_as<toml::array>("materials");
+    const auto config = toml::parse_file(file);
+    const auto &textures = *config.get_as<toml::array>("textures");
+    std::map<std::string, std::shared_ptr<texture>> tex_tbl;
+    for (auto &&tex : textures) {
+        const auto& tex_info = *tex.as_array();
+        const auto tex_name = tex_info[0].value<std::string>().value();
+        const auto tex_type = tex_info[1].value<std::string>().value();
+        if (tex_type == "image") {
+            const auto path = tex_info[2].value<std::string>().value();
+            tex_tbl.emplace(tex_name, std::make_shared<image_texture>(path));
+        } else if (tex_type == "solid") {
+            const auto rgb = parse_vec(tex_info, 2, 3);
+            tex_tbl.emplace(tex_name, std::make_shared<solid_color>(rgb[0], rgb[1], rgb[2]));
+        }
+    }
+
+    const auto& materials = *config.get_as<toml::array>("materials");
     std::map<std::string, std::shared_ptr<material>> mat_tbl;
     for (auto &&mat: materials) {
-        auto mat_arr = *mat.as_array();
-        auto mat_name = mat_arr[0].value<std::string>().value();
-        auto mat_type = mat_arr[1].value<std::string>().value();
+        const auto mat_info = *mat.as_array();
+        const auto mat_name = mat_info[0].value<std::string>().value();
+        const auto mat_type = mat_info[1].value<std::string>().value();
+        const auto use_tex = mat_info[2].value<bool>().value();
         if (mat_type == "lambertian") {
-            const auto rgb = parse_vec(mat_arr, 2, 3);
-            mat_tbl.emplace(mat_name, std::make_shared<lambertian>(vec3_t{rgb[0], rgb[1], rgb[2]}));
+            if (use_tex) {
+                const auto tex_name = mat_info[3].value<std::string>().value();
+                mat_tbl.emplace(mat_name, std::make_shared<lambertian>(tex_tbl[tex_name]));
+            } else {
+                const auto rgb = parse_vec(mat_info, 3, 3);
+                mat_tbl.emplace(mat_name, std::make_shared<lambertian>(vec3_t{rgb[0], rgb[1], rgb[2]}));
+            }
         } else if (mat_type == "dielectric") {
-            auto ref_idx = mat_arr[2].value<float>().value();
-            mat_tbl.emplace(mat_name, std::make_shared<dielectric>(ref_idx));
+            if (use_tex) {
+
+            } else {
+                const auto ref_idx = mat_info[3].value<float>().value();
+                mat_tbl.emplace(mat_name, std::make_shared<dielectric>(ref_idx));
+            }
         } else if (mat_type == "metal") {
-            const auto rgbf = parse_vec(mat_arr, 2, 4);
-            mat_tbl.emplace(mat_name, std::make_shared<metal>(vec3_t{rgbf[0], rgbf[1], rgbf[2]}, rgbf[3]));
+            if (use_tex) {
+
+            } else {
+                const auto rgbf = parse_vec(mat_info, 3, 4);
+                mat_tbl.emplace(mat_name, std::make_shared<metal>(vec3_t{rgbf[0], rgbf[1], rgbf[2]}, rgbf[3]));
+            }
         }
     }
 
     world_t world;
-    auto& spheres = *config.get_as<toml::array>("spheres");
+    const auto& spheres = *config.get_as<toml::array>("spheres");
     for (auto &&sph: spheres) {
-        auto sph_arr = *sph.as_array();
+        const auto& sph_arr = *sph.as_array();
         const auto xyzr = parse_vec(sph_arr, 0, 4);
-        auto mat_name = sph_arr[4].value<std::string>().value();
-        auto sph_mat = mat_tbl[mat_name];
+        const auto mat_name = sph_arr[4].value<std::string>().value();
+        const auto sph_mat = mat_tbl[mat_name];
         world.push_back(std::make_shared<sphere>(vec3_t{xyzr[0], xyzr[1], xyzr[2]}, xyzr[3], sph_mat));
     }
 
@@ -102,7 +130,7 @@ world_t make_scene(const std::string &file) {
 }
 
 tracer make_tracer(const std::string &file) {
-    auto config = toml::parse_file(file);
+    const auto config = toml::parse_file(file);
     const int width = config["canvas"]["width"].value<int>().value();
     const int height = config["canvas"]["height"].value<int>().value();
     const int samples_per_pixel = config["options"]["samples_per_pixel"].value<int>().value();
@@ -132,6 +160,4 @@ tracer make_tracer(const std::string &file) {
     return {tconfig, cam};
 }
 
-
-
-#endif //RT_PARSER_H
+#endif //RT_PARSER_HPP

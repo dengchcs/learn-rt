@@ -2,14 +2,14 @@
 // Created by CD on 2022/10/26.
 //
 
-#ifndef RT_SPHERE_H
-#define RT_SPHERE_H
+#ifndef RT_SPHERE_HPP
+#define RT_SPHERE_HPP
 
+#include "aabb.hpp"
+#include "common.hpp"
+#include "hittable.hpp"
+#include "ray.hpp"
 #include <utility>
-
-#include "common.h"
-#include "hittable.h"
-#include "ray.h"
 
 class material;
 
@@ -59,6 +59,7 @@ public:
         if (radius_ < 0) record.normal *= -1;
         record.outside = r.direction().dot(record.normal) < 0;
         if (!record.outside) record.normal *= -1;
+        uv_at(record.point, record.u, record.v);
         record.pmat = pmat_;
         return record;
     }
@@ -71,6 +72,17 @@ public:
                 center_ + disp
         };
     }
+
+    /**
+     * @brief 计算球面一点的参数坐标, 参数范围为[0, 1] * [0, 1]
+     */
+    void uv_at(const point_t& point, float &u, float &v) const {
+        const auto p_unit = (point - center_) / radius_;
+        const float theta = std::acos(-p_unit.y());
+        const float phi = std::atan2(-p_unit.z(), p_unit.x()) + g_pi;
+        u = phi / (2.0f * g_pi);
+        v = theta / g_pi;
+    }
 };
 
-#endif //RT_SPHERE_H
+#endif //RT_SPHERE_HPP

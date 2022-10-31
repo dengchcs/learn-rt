@@ -2,8 +2,8 @@
 // Created by CD on 2022/10/25.
 //
 
-#ifndef RT_COMMON_H
-#define RT_COMMON_H
+#ifndef RT_COMMON_HPP
+#define RT_COMMON_HPP
 
 #include <cassert>
 #include <cmath>
@@ -146,4 +146,4 @@ constexpr auto g_infinity = std::numeric_limits<float>::max();
 constexpr float g_pi = 3.141592653589793238462643383279502884;
 
 
-#endif //RT_COMMON_H
+#endif //RT_COMMON_HPP

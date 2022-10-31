@@ -2,12 +2,12 @@
 // Created by CD on 2022/10/28.
 //
 
-#ifndef RT_CAMERA_H
-#define RT_CAMERA_H
+#ifndef RT_CAMERA_HPP
+#define RT_CAMERA_HPP
 
-#include "common.h"
-#include "ray.h"
-#include "utils.h"
+#include "common.hpp"
+#include "ray.hpp"
+#include "utils.hpp"
 
 class camera {
     point_t eye_;
@@ -53,4 +53,4 @@ public:
     }
 };
 
-#endif //RT_CAMERA_H
+#endif //RT_CAMERA_HPP

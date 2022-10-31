@@ -2,16 +2,15 @@
 // Created by CD on 2022/10/30.
 //
 
-#ifndef RT_BVH_NODE_H
-#define RT_BVH_NODE_H
+#ifndef RT_BVH_NODE_HPP
+#define RT_BVH_NODE_HPP
 
-#include <iostream>
-#include "common.h"
-#include "aabb.h"
-#include "hittable.h"
-#include "utils.h"
-
+#include "aabb.hpp"
+#include "common.hpp"
+#include "hittable.hpp"
+#include "utils.hpp"
 #include <algorithm>
+#include <iostream>
 
 /**
  * BVH树, 划分轴是随机选取的
@@ -79,4 +78,4 @@ public:
     }
 };
 
-#endif //RT_BVH_NODE_H
+#endif //RT_BVH_NODE_HPP

@@ -1,5 +1,5 @@
-#include "utils.h"
-#include "parser.h"
+#include "parser.hpp"
+#include "utils.hpp"
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {

@@ -2,7 +2,7 @@
 // Created by CD on 2022/10/25.
 //
 
-#include "common.h"
+#include "common.hpp"
 
 #ifndef RT_RAY_H
 #define RT_RAY_H

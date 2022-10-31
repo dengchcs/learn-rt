@@ -2,17 +2,16 @@
 // Created by CD on 2022/10/30.
 //
 
-#ifndef RT_TRACER_H
-#define RT_TRACER_H
+#ifndef RT_TRACER_HPP
+#define RT_TRACER_HPP
 
-#include "common.h"
-#include "bvh_node.h"
-#include "camera.h"
-#include "hittable.h"
-#include "material.h"
+#include "bvh_node.hpp"
+#include "camera.hpp"
+#include "common.hpp"
+#include "hittable.hpp"
+#include "material.hpp"
 #include <execution>
 #include <iostream>
-#include <fstream>
 
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -33,7 +32,7 @@ public:
 
     }
 
-    ~tracer() { delete data_; }
+    ~tracer() { delete[] data_; }
 
 private:
     config config_;
@@ -154,4 +153,4 @@ public:
     }
 };
 
-#endif //RT_TRACER_H
+#endif //RT_TRACER_HPP

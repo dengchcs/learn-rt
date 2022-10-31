@@ -2,13 +2,15 @@
 // Created by CD on 2022/10/26.
 //
 
-#ifndef RT_MATERIAL_H
-#define RT_MATERIAL_H
+#ifndef RT_MATERIAL_HPP
+#define RT_MATERIAL_HPP
 
-#include "common.h"
-#include "hittable.h"
-#include "ray.h"
-#include "utils.h"
+#include "common.hpp"
+#include "hittable.hpp"
+#include "ray.hpp"
+#include "texture.hpp"
+#include "utils.hpp"
+#include <utility>
 
 class material {
 public:
@@ -24,11 +26,12 @@ public:
  */
 class lambertian : public material {
 public:
-    vec3_t albedo_;
+    std::shared_ptr<texture> albedo_;
 public:
-    explicit lambertian(const vec3_t &albedo) : albedo_(albedo) {}
+    explicit lambertian(const color_t &albedo) : albedo_(std::make_shared<solid_color>(albedo)) {}
+    explicit lambertian(std::shared_ptr<texture> tex) : albedo_(std::move(tex)) {}
 
-    bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation, ray &scattered) const override {
+    bool scatter(const ray &ray_in, const hit_record &record, color_t &attenuation, ray &scattered) const override {
         // 漫反射方向: 在切点处相切球面上随机选取一点, 切点到此点的方向为漫反射方向
         // vec3_t direction = record.normal + random_unit_vec();
 
@@ -37,7 +40,7 @@ public:
             direction = record.normal;
         }
         scattered = {record.point, direction};
-        attenuation = albedo_;
+        attenuation = albedo_->color_at(record.u, record.v, record.point);
         return true;
     }
 };
@@ -98,4 +101,4 @@ public:
     }
 };
 
-#endif //RT_MATERIAL_H
+#endif //RT_MATERIAL_HPP

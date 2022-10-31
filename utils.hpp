@@ -2,15 +2,15 @@
 // Created by CD on 2022/10/26.
 //
 
-#ifndef RT_UTILS_H
-#define RT_UTILS_H
+#ifndef RT_UTILS_HPP
+#define RT_UTILS_HPP
 
-#include "common.h"
-#include <random>
+#include "common.hpp"
 #include <chrono>
 #include <ctime>
 #include <iomanip>
 #include <optional>
+#include <random>
 #include <sstream>
 
 inline float clamp(float x, float xmin, float xmax) {
@@ -116,4 +116,4 @@ std::string current_time() {
     return ss.str();
 }
 
-#endif //RT_UTILS_H
+#endif //RT_UTILS_HPP

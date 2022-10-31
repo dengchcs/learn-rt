@@ -2,11 +2,12 @@
 // Created by CD on 2022/10/30.
 //
 
-#ifndef RT_AABB_H
-#define RT_AABB_H
+#ifndef RT_AABB_HPP
+#define RT_AABB_HPP
 
-#include "common.h"
-#include "ray.h"
+#include "common.hpp"
+#include "ray.hpp"
+#include <algorithm>
 
 /**
  * @brief 轴对齐包围盒
@@ -66,4 +67,4 @@ public:
     [[nodiscard]] point_t high() const { return high_; }
 };
 
-#endif //RT_AABB_H
+#endif //RT_AABB_HPP
