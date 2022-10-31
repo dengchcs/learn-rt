@@ -10,6 +10,7 @@
 #include "ray.h"
 #include <memory>
 #include <optional>
+#include <vector>
 
 class material;
 

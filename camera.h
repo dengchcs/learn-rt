@@ -20,12 +20,13 @@ public:
             point_t eye,        // 相机位置
             point_t center,     // 视点
             vec3_t up,          // 相机上方向
-            float vfov,         // 竖直方向视角(弧度制)
+            float vfov,         // 竖直方向视角(角度制)
             float aspect_ratio, // 水平/竖直视域比例
             float aperture,     // 孔径
             float focus_dist    // 焦距
     ) {
         // "标准"viewport高为2
+        vfov = vfov * g_pi / 180.0f;
         const float vp_height = 2.0f * std::tan(vfov / 2.0f) * focus_dist;
         const float vp_width = vp_height * aspect_ratio;
         const auto w = unit_vec3{eye - center};

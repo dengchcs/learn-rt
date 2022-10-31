@@ -1,0 +1,34 @@
+# 材质名称, 材质类型, 材质参数
+# 材质名称应该是唯一的, 可以在物体定义中引用
+materials = [
+    ["mat-ground", "lambertian", 0.2, 0.8, 0.2],    # 对rgb三色的反射率
+    ["mat1", "dielectric", 1.5],    # 折射率
+    ["mat2", "lambertian", 1.0, 0.4, 0.4],
+    ["mat3", "metal", 0.2, 0.5, 0.8, 0.1],  # 对rgb三色的反射率, 模糊程度
+]
+
+# 球心x,y,z坐标, 球半径, 材质名称
+spheres = [
+    [0, -100.5, 0, 100, "mat-ground"],
+    [-1, 0, -1, 0.5, "mat1"],
+    [-1, 0, -1, -0.45, "mat1"],
+    [0, 0, -1, 0.5, "mat2"],
+    [1, 0, -1, 0.5, "mat3"],
+]
+
+[canvas]
+width = 300             # 图片宽度
+height = 200            # 图片高度
+
+[options]
+samples_per_pixel = 500 # 每个像素的采样数
+max_depth = 100         # 递归的最大层数
+use_bvh = true          # 是否使用bvh加速
+parallel = true         # 是否并行渲染
+
+[camera]
+lookfrom = [3, 3, 2]    # 相机位置
+lookat = [0, 0, -1]     # 焦点
+vup = [0, 1, 0]         # 相机上方向
+aperture = 1.0          # 相机"孔径", 孔径越大场景越模糊
+vfov = 20               # 竖直方向的视角, 角度值
