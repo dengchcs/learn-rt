@@ -18,6 +18,8 @@ public:
 
     vector3(float x, float y, float z) : e{x, y, z} {}
 
+    explicit vector3(const float *const data) : e{data[0], data[1], data[2]} {}
+
     [[nodiscard]] float x() const { return e[0]; }
 
     [[nodiscard]] float y() const { return e[1]; }

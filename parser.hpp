@@ -10,6 +10,7 @@
 #include "material.hpp"
 #include "sphere.hpp"
 #include "tracer.hpp"
+#include "triangle.hpp"
 #include "deps/toml.hpp"
 #include <map>
 #include <string>
@@ -71,8 +72,8 @@ world_t make_scene(const std::string &file) {
     const auto config = toml::parse_file(file);
     const auto &textures = *config.get_as<toml::array>("textures");
     std::map<std::string, std::shared_ptr<texture>> tex_tbl;
-    for (auto &&tex : textures) {
-        const auto& tex_info = *tex.as_array();
+    for (auto &&tex: textures) {
+        const auto &tex_info = *tex.as_array();
         const auto tex_name = tex_info[0].value<std::string>().value();
         const auto tex_type = tex_info[1].value<std::string>().value();
         if (tex_type == "image") {
@@ -84,7 +85,7 @@ world_t make_scene(const std::string &file) {
         }
     }
 
-    const auto& materials = *config.get_as<toml::array>("materials");
+    const auto &materials = *config.get_as<toml::array>("materials");
     std::map<std::string, std::shared_ptr<material>> mat_tbl;
     for (auto &&mat: materials) {
         const auto mat_info = *mat.as_array();
@@ -94,7 +95,7 @@ world_t make_scene(const std::string &file) {
         if (mat_type == "lambertian") {
             if (use_tex) {
                 const auto tex_name = mat_info[3].value<std::string>().value();
-                mat_tbl.emplace(mat_name, std::make_shared<lambertian>(tex_tbl[tex_name]));
+                mat_tbl.emplace(mat_name, std::make_shared<lambertian>(tex_tbl.at(tex_name)));
             } else {
                 const auto rgb = parse_vec(mat_info, 3, 3);
                 mat_tbl.emplace(mat_name, std::make_shared<lambertian>(vec3_t{rgb[0], rgb[1], rgb[2]}));
@@ -108,7 +109,9 @@ world_t make_scene(const std::string &file) {
             }
         } else if (mat_type == "metal") {
             if (use_tex) {
-
+                const auto tex_name = mat_info[3].value<std::string>().value();
+                const auto fuzz = mat_info[4].value<float>().value();
+                mat_tbl.emplace(mat_name, std::make_shared<metal>(tex_tbl.at(tex_name), fuzz));
             } else {
                 const auto rgbf = parse_vec(mat_info, 3, 4);
                 mat_tbl.emplace(mat_name, std::make_shared<metal>(vec3_t{rgbf[0], rgbf[1], rgbf[2]}, rgbf[3]));
@@ -117,13 +120,31 @@ world_t make_scene(const std::string &file) {
     }
 
     world_t world;
-    const auto& spheres = *config.get_as<toml::array>("spheres");
-    for (auto &&sph: spheres) {
-        const auto& sph_arr = *sph.as_array();
-        const auto xyzr = parse_vec(sph_arr, 0, 4);
-        const auto mat_name = sph_arr[4].value<std::string>().value();
-        const auto sph_mat = mat_tbl[mat_name];
-        world.push_back(std::make_shared<sphere>(vec3_t{xyzr[0], xyzr[1], xyzr[2]}, xyzr[3], sph_mat));
+    if (config.contains("spheres")) {
+        const auto &spheres = *config.get_as<toml::array>("spheres");
+        for (auto &&sph: spheres) {
+            const auto &sph_info = *sph.as_array();
+            const auto xyzr = parse_vec(sph_info, 0, 4);
+            const auto mat_name = sph_info[4].value<std::string>().value();
+            const auto sph_mat = mat_tbl.at(mat_name);
+            world.push_back(std::make_shared<sphere>(vec3_t{xyzr[0], xyzr[1], xyzr[2]}, xyzr[3], sph_mat));
+        }
+    }
+    if (config.contains("triangles")) {
+        const auto &triangles = *config.get_as<toml::array>("triangles");
+        for (auto &&tri: triangles) {
+            const auto &tri_info = *tri.as_array();
+            point_t vertices[3];
+            float tex_coords[6];
+            for (int i = 0; i < 3; i++) {
+                const auto vert = parse_vec(*tri_info[i].as_array(), 0, 5);
+                vertices[i] = {vert[0], vert[1], vert[2]};
+                tex_coords[i * 2] = vert[3], tex_coords[i * 2 + 1] = vert[4];
+            }
+            const auto mat_name = tri_info[3].value<std::string>().value();
+            const auto tri_mat = mat_tbl.at(mat_name);
+            world.push_back(std::make_shared<triangle>(vertices[0], vertices[1], vertices[2], tex_coords, tri_mat));
+        }
     }
 
     return world;
@@ -145,7 +166,7 @@ tracer make_tracer(const std::string &file) {
 
     const float aspect_ratio = (float) width / (float) height;
 
-    auto parse_vec3 = [](const toml::array& arr) {
+    auto parse_vec3 = [](const toml::array &arr) {
         const auto vec = parse_vec(arr, 0, 3);
         return vec3_t{vec[0], vec[1], vec[2]};
     };

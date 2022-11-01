@@ -29,6 +29,7 @@ public:
     std::shared_ptr<texture> albedo_;
 public:
     explicit lambertian(const color_t &albedo) : albedo_(std::make_shared<solid_color>(albedo)) {}
+
     explicit lambertian(std::shared_ptr<texture> tex) : albedo_(std::move(tex)) {}
 
     bool scatter(const ray &ray_in, const hit_record &record, color_t &attenuation, ray &scattered) const override {
@@ -50,17 +51,21 @@ public:
  */
 class metal : public material {
 public:
-    vec3_t albedo_;
+    std::shared_ptr<texture> albedo_;
     float fuzz_;    // 模糊程度
 public:
-    explicit metal(const vec3_t &albedo, float f = 0) : albedo_(albedo) {
+    explicit metal(const vec3_t &albedo, float f = 0) : albedo_(std::make_shared<solid_color>(albedo)) {
+        fuzz_ = clamp(f, 0, 1);
+    }
+
+    explicit metal(std::shared_ptr<texture> tex, float f = 0) : albedo_(std::move(tex)) {
         fuzz_ = clamp(f, 0, 1);
     }
 
     bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation, ray &scattered) const override {
         const vec3_t reflected = reflect(ray_in.direction(), record.normal);
         scattered = {record.point, reflected + fuzz_ * random_in_unit_sphere()};
-        attenuation = albedo_;
+        attenuation = albedo_->color_at(record.u, record.v, record.point);
         return scattered.direction().dot(record.normal) > 0;
     }
 };

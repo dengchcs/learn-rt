@@ -27,6 +27,18 @@ public:
         return radius_;
     }
 
+private:
+    /**
+     * @brief 计算球面一点的参数坐标, 参数范围为[0, 1] * [0, 1]
+     */
+    void uv_at(const point_t &point, float &u, float &v) const {
+        const auto p_unit = (point - center_) / radius_;
+        const float theta = std::acos(-p_unit.y());
+        const float phi = std::atan2(-p_unit.z(), p_unit.x()) + g_pi;
+        u = phi / (2.0f * g_pi);
+        v = theta / g_pi;
+    }
+
 public:
     sphere(const point_t &center, float radius, std::shared_ptr<material> m)
             : center_(center), radius_(radius), pmat_(std::move(m)) {
@@ -67,21 +79,7 @@ public:
     [[nodiscard]] std::optional<aabb> bounding_box() const override {
         const float absr = std::abs(radius_);
         const vec3_t disp{absr, absr, absr};
-        return aabb{
-                center_ - disp,
-                center_ + disp
-        };
-    }
-
-    /**
-     * @brief 计算球面一点的参数坐标, 参数范围为[0, 1] * [0, 1]
-     */
-    void uv_at(const point_t& point, float &u, float &v) const {
-        const auto p_unit = (point - center_) / radius_;
-        const float theta = std::acos(-p_unit.y());
-        const float phi = std::atan2(-p_unit.z(), p_unit.x()) + g_pi;
-        u = phi / (2.0f * g_pi);
-        v = theta / g_pi;
+        return aabb{center_ - disp, center_ + disp};
     }
 };
 

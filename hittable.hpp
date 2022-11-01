@@ -21,10 +21,6 @@ struct hit_record {
     float u{0}, v{0};   // 交点的曲面参数
     bool outside{true}; // ray来自曲面外还是曲面内; 当球半径为负时"曲面外"是包含球心的一侧
     std::shared_ptr<material> pmat; // 交点处的材质信息
-    // 当球半径为正时外法向背离球心; 当球半径为负时外法向指向球心
-    [[nodiscard]] unit_vec3 outward_normal() const {
-        return outside ? normal : unit_vec3{-normal};
-    }
 };
 
 class hittable {
