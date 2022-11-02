@@ -19,13 +19,16 @@ public:
      * @param scattered 反/折射光线
      */
     virtual bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation, ray &scattered) const = 0;
+
+    [[nodiscard]] virtual color_t emit(float u, float v, const point_t &point) const {
+        return {0, 0, 0};
+    }
 };
 
 /**
  * 理想漫反射, 反射光均匀向各个方向传播
  */
 class lambertian : public material {
-public:
     std::shared_ptr<texture> albedo_;
 public:
     explicit lambertian(const color_t &albedo) : albedo_(std::make_shared<solid_color>(albedo)) {}
@@ -50,7 +53,6 @@ public:
  * 镜面反射 & 模糊效果
  */
 class metal : public material {
-public:
     std::shared_ptr<texture> albedo_;
     float fuzz_;    // 模糊程度
 public:
@@ -103,6 +105,22 @@ public:
 
         scattered = {record.point, out};
         return true;
+    }
+};
+
+class light : public material {
+    std::shared_ptr<texture> albedo_;
+public:
+    explicit light(const color_t &color) : albedo_(std::make_shared<solid_color>(color)) {}
+
+    explicit light(std::shared_ptr<texture> tex) : albedo_(std::move(tex)) {}
+
+    bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation, ray &scattered) const override {
+        return false;
+    }
+
+    [[nodiscard]] color_t emit(float u, float v, const point_t &point) const override {
+        return albedo_->color_at(u, v, point);
     }
 };
 

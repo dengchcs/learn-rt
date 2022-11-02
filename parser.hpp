@@ -70,7 +70,10 @@ std::vector<float> parse_vec(const toml::array &arr, int start, int cnt) {
 }
 
 world_t make_scene(const std::string &file) {
+    std::cout << "scene reading: started...\n";
     const auto config = toml::parse_file(file);
+
+    std::cout << "\treading textures...\n";
     const auto &textures = *config.get_as<toml::array>("textures");
     std::map<std::string, std::shared_ptr<texture>> tex_tbl;
     for (auto &&tex: textures) {
@@ -88,6 +91,7 @@ world_t make_scene(const std::string &file) {
         }
     }
 
+    std::cout << "\treading materials...\n";
     const auto &materials = *config.get_as<toml::array>("materials");
     std::map<std::string, std::shared_ptr<material>> mat_tbl;
     for (auto &&mat: materials) {
@@ -125,6 +129,7 @@ world_t make_scene(const std::string &file) {
     }
 
     world_t world;
+    std::cout << "\treading spheres...\n";
     if (config.contains("spheres")) {
         const auto &spheres = *config.get_as<toml::array>("spheres");
         for (auto &&sph: spheres) {
@@ -135,6 +140,7 @@ world_t make_scene(const std::string &file) {
             world.push_back(std::make_shared<sphere>(vec3_t{xyzr[0], xyzr[1], xyzr[2]}, xyzr[3], sph_mat));
         }
     }
+    std::cout << "\treading triangles...\n";
     if (config.contains("triangles")) {
         const auto &triangles = *config.get_as<toml::array>("triangles");
         for (auto &&tri: triangles) {
@@ -151,7 +157,7 @@ world_t make_scene(const std::string &file) {
             world.push_back(std::make_shared<triangle>(vertices[0], vertices[1], vertices[2], tex_coords, tri_mat));
         }
     }
-
+    std::cout << "\treading meshes...\n";
     if (config.contains("meshes")) {
         const auto &meshes = *config.get_as<toml::array>("meshes");
         float tex[6] = {0, 0, 0, 0, 0, 0};
@@ -172,11 +178,29 @@ world_t make_scene(const std::string &file) {
             }
         }
     }
+    std::cout << "\treading lights...\n";
+    if (config.contains("lights")) {
+        const auto &lights = *config.get_as<toml::array>("lights");
+        float tex[6] = {0, 0, 0, 0, 0, 0};
+        for (auto &&ligh : lights) {
+            const auto light_info = *ligh.as_array();
+            point_t points[3];
+            for (int i = 0; i < 3; i++) {
+                const auto vert = parse_vec(*light_info[i].as_array(), 0, 3);
+                points[i] = point_t{vert.data()};
+            }
+            const auto rgb = parse_vec(light_info, 3, 3);
+            const auto mat = std::make_shared<light>(color_t{rgb[0], rgb[1], rgb[2]});
+            world.push_back(std::make_shared<triangle>(points[0], points[1], points[2], tex, mat));
+        }
+    }
 
+    std::cout << "scene reading: done.\n\n";
     return world;
 }
 
 tracer make_tracer(const std::string &file) {
+    std::cout << "tracer configuring: started...\n";
     const auto config = toml::parse_file(file);
     const int width = config["canvas"]["width"].value<int>().value();
     const int height = config["canvas"]["height"].value<int>().value();
@@ -204,6 +228,7 @@ tracer make_tracer(const std::string &file) {
     const float vfov = config["camera"]["vfov"].value<float>().value();
     camera cam{lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus};
 
+    std::cout << "tracer configuring: done.\n\n";
     return {tconfig, cam};
 }
 

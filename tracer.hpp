@@ -41,7 +41,7 @@ private:
 
 private:
     template<typename T>
-    [[nodiscard]] color_t ray_color(const ray &r, const T &target, int depth) const {
+    [[nodiscard]] color_t cast_ray(const ray &r, const T &target, int depth) const {
         if (depth <= 0) {
             return {0, 0, 0};
         }
@@ -51,16 +51,18 @@ private:
         } else if constexpr (std::is_same_v<T, world_t>) {
             record = hit(target, r, 0.001, g_infinity);
         }
-        if (record.has_value()) {
-            ray scattered;
-            color_t attenuation;
-            if (record->pmat->scatter(r, record.value(), attenuation, scattered)) {
-                return attenuation * ray_color(scattered, target, depth - 1);
-            }
-            return color_t{0, 0, 0};
+        const color_t background{0.1, 0.1, 0.1};
+        if (! record.has_value()) {
+            return background;
         }
-        float t = (r.direction().y() + 1.0f) / 2.0f;
-        return (1.0f - t) * color_t{1.0, 1.0, 1.0} + t * color_t{0.5, 0.7, 1.0};
+        ray scattered;
+        color_t attenuation;
+        const color_t emitted = record->pmat->emit(record->u, record->v, record->point);
+        const bool scatter = record->pmat->scatter(r, record.value(), attenuation, scattered);
+        if (! scatter) {
+            return emitted;
+        }
+        return emitted + attenuation * cast_ray(scattered, target, depth - 1);
     }
 
     /**
@@ -93,7 +95,7 @@ private:
                     const float u = ((float) i + random_float()) / (float) config_.width;
                     const float v = ((float) j + random_float()) / (float) config_.height;
                     ray r = cam_.get_ray(u, v);
-                    color += ray_color(r, target, config_.max_depth);
+                    color += cast_ray(r, target, config_.max_depth);
                 }
                 const int row = config_.height - 1 - j, col = i;
                 write_color(row, col, color);
@@ -124,7 +126,7 @@ private:
                         const float u = ((float) col + random_float()) / (float) config_.width;
                         const float v = ((float) (config_.height - 1 - row) + random_float()) / (float) config_.height;
                         ray r = cam_.get_ray(u, v);
-                        color += ray_color(r, target, config_.max_depth);
+                        color += cast_ray(r, target, config_.max_depth);
                     }
                     write_color(row, col, color);
                 });
@@ -135,17 +137,18 @@ private:
 
 public:
     void trace(const world_t &world, const std::string &path) {
-        if (config_.parallel) {
-            if (config_.use_bvh) {
-                bvh_node bvh{world, 0, world.size()};
+        if (config_.use_bvh) {
+            std::cout << "BVH building: started...\n";
+            bvh_node bvh{world, 0, world.size()};
+            std::cout << "BVH building: done.\n\n";
+            if (config_.parallel) {
                 trace_parallel(bvh, path);
             } else {
-                trace_parallel(world, path);
+                trace_sequential(bvh, path);
             }
         } else {
-            if (config_.use_bvh) {
-                bvh_node bvh{world, 0, world.size()};
-                trace_sequential(bvh, path);
+            if (config_.parallel) {
+                trace_parallel(world, path);
             } else {
                 trace_sequential(world, path);
             }
