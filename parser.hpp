@@ -11,6 +11,7 @@
 #include "sphere.hpp"
 #include "tracer.hpp"
 #include "triangle.hpp"
+#include "deps/happly.h"
 #include "deps/toml.hpp"
 #include <map>
 #include <string>
@@ -82,6 +83,8 @@ world_t make_scene(const std::string &file) {
         } else if (tex_type == "solid") {
             const auto rgb = parse_vec(tex_info, 2, 3);
             tex_tbl.emplace(tex_name, std::make_shared<solid_color>(rgb[0], rgb[1], rgb[2]));
+        } else {
+            std::cerr << "unknown texture: " << tex_type << "\n";
         }
     }
 
@@ -116,6 +119,8 @@ world_t make_scene(const std::string &file) {
                 const auto rgbf = parse_vec(mat_info, 3, 4);
                 mat_tbl.emplace(mat_name, std::make_shared<metal>(vec3_t{rgbf[0], rgbf[1], rgbf[2]}, rgbf[3]));
             }
+        } else {
+            std::cerr << "unknown material: " << mat_type << "\n";
         }
     }
 
@@ -144,6 +149,27 @@ world_t make_scene(const std::string &file) {
             const auto mat_name = tri_info[3].value<std::string>().value();
             const auto tri_mat = mat_tbl.at(mat_name);
             world.push_back(std::make_shared<triangle>(vertices[0], vertices[1], vertices[2], tex_coords, tri_mat));
+        }
+    }
+
+    if (config.contains("meshes")) {
+        const auto &meshes = *config.get_as<toml::array>("meshes");
+        float tex[6] = {0, 0, 0, 0, 0, 0};
+        for (auto &&mesh: meshes) {
+            const auto mesh_info = *mesh.as_array();
+            const auto mesh_name = mesh_info[0].value<std::string>().value();
+            const auto mat_name = mesh_info[1].value<std::string>().value();
+            const auto mesh_mat = mat_tbl.at(mat_name);
+            happly::PLYData mesh_data(mesh_name);
+            const auto vertices = mesh_data.getVertexPositions();
+            const auto indices = mesh_data.getFaceIndices();
+            for (auto &&index: indices) {
+                const auto v0 = vertices[index[0]], v1 = vertices[index[1]], v2 = vertices[index[2]];
+                const auto p0 = point_t(v0[0], v0[1], v0[2]);
+                const auto p1 = point_t(v1[0], v1[1], v1[2]);
+                const auto p2 = point_t(v2[0], v2[1], v2[2]);
+                world.push_back(std::make_shared<triangle>(p0, p1, p2, tex, mesh_mat));
+            }
         }
     }
 
