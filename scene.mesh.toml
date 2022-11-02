@@ -1,32 +1,45 @@
 # 纹理名称, 纹理类型, 纹理参数
 # 纹理名称应该是唯一的, 可以在材质定义中引用
 textures = [
-    ["red", "solid", 1, 0, 0],
-    ["silver", "solid", 0.72, 0.72, 0.72],
-    ["gray", "solid", 0.5, 0.5, 0.5],
+    ["tex-red",     "solid", 1, 0, 0],
+    ["tex-green",   "solid", 0, 1, 0],
+    ["tex-blue",    "solid", 0, 0, 1],
+    ["tex-silver",  "solid", 0.72, 0.72, 0.72],
+    ["tex-gray",    "solid", 0.1, 0.1, 0.1],
+    ["tex-earth",   "image", "../assets/earthmap.jpg"],
 ]
 
 # 材质名称, 材质类型, 是否使用纹理, 若是则提供纹理名称, 否则提供材质参数
 # 材质名称应该是唯一的, 可以在物体定义中引用
 materials = [
-    ["mat1", "lambertian", true, "red"],
-    ["mat2", "metal", true, "red", 0],
-    ["mat3", "metal", true, "silver", 0.01],
-    ["mat4", "lambertian", true, "gray"],
+    ["mat-lam-red",         "lambertian",   true,   "tex-red"],
+    ["mat-metal-red",       "metal",        true,   "tex-red", 0],
+    ["mat-metal-silver",    "metal",        true,   "tex-silver", 0.01],
+    ["mat-lam-gray",        "lambertian",   true,   "tex-gray"],
+    ["mat-lam-green",       "lambertian",   true,   "tex-green"],
+    ["mat-lam-blue",        "lambertian",   true,   "tex-blue"],
+    ["mat-light-white",     "light",        false,  10, 10, 10],
+    ["mat-metal-earth",     "metal",        true,   "tex-earth", 0],
 ]
 
 # 球心x,y,z坐标, 球半径, 材质名称
 spheres = [
+    [0, 0, 0.2, 0.2, "mat-metal-earth"],
+    # [0, -1000.5, 0, 1000, "mat-lam-gray"],
+]
+
+rectangles = [
+    [[-1, 1, -1], [2, 0, 0], [0, 0, 2], "mat-lam-red"], # 顶面
+    [[-0.5, 0.99, -0.5], [1, 0, 0], [0, 0, 1], "mat-light-white"],
+    [[-1, 1, -1], [2, 0, 0], [0, -2, 0], "mat-lam-gray"], # 前面
+    [[-1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-gray"], # 左侧面
+    [[1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-gray"], # 右侧面
+    [[-1, -1, -1], [2, 0, 0], [0, 0, 2], "mat-lam-gray"], # 底面
 ]
 
 # 三角面片模型路线, 材质(只支持纯色材质)
 meshes = [
-    ["../assets/bun_zipper.ply", "mat4"],
-]
-
-lights = [
-    ["triangle", [0.2, 0.3, -0.4], [0, 0.3, 0.2], [-0.2, 0.3, -0.4], 0.1, 0.4, 0.1],
-    ["rectangle", [0.2, 0, 0.2], [0, 0, -0.4], [0, 0.2, 0], 1, 1, 1], # 矩形=一个顶点+两条正交边向量
+    ["../assets/bun_zipper.ply", "mat-lam-gray"],
 ]
 
 [canvas]
@@ -35,14 +48,14 @@ height = 400            # 图片高度
 background = [0.01, 0.01, 0.01] # 背景色
 
 [options]
-samples_per_pixel = 500 # 每个像素的采样数
-max_depth = 100         # 递归的最大层数
+samples_per_pixel = 100 # 每个像素的采样数
+max_depth = 50         # 递归的最大层数
 use_bvh = true          # 是否使用bvh加速
 parallel = true         # 是否并行渲染
 
 [camera]
-lookfrom = [0, 0.1, 1]    # 相机位置
-lookat = [0, 0.1, 0]     # 焦点
+lookfrom = [0, 0, 1]    # 相机位置
+lookat = [0, 0, -1]     # 焦点
 vup = [0, 1, 0]         # 相机上方向
 aperture = 0.0          # 相机"孔径", 孔径越大场景越模糊
-vfov = 20               # 竖直方向的视角, 角度值
+vfov = 90               # 竖直方向的视角, 角度值

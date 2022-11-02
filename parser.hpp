@@ -124,6 +124,14 @@ world_t make_scene(const std::string &file) {
                 const auto rgbf = parse_vec(mat_info, 3, 4);
                 mat_tbl.emplace(mat_name, std::make_shared<metal>(vec3_t{rgbf[0], rgbf[1], rgbf[2]}, rgbf[3]));
             }
+        } else if (mat_type == "light") {
+            if (use_tex) {
+                const auto tex_name = mat_info[3].value<std::string>().value();
+                mat_tbl.emplace(mat_name, std::make_shared<light>(tex_tbl.at(tex_name)));
+            } else {
+                const auto rgb = parse_vec(mat_info, 3, 3);
+                mat_tbl.emplace(mat_name, std::make_shared<light>(color_t{rgb[0], rgb[1], rgb[2]}));
+            }
         } else {
             std::cerr << "unknown material: " << mat_type << "\n";
         }
@@ -179,27 +187,19 @@ world_t make_scene(const std::string &file) {
             }
         }
     }
-    std::cout << "\treading lights...\n";
-    if (config.contains("lights")) {
-        const auto &lights = *config.get_as<toml::array>("lights");
-        float tex[6] = {0, 0, 0, 0, 0, 0};
-        for (auto &&ligh: lights) {
-            const auto light_info = *ligh.as_array();
-            const auto light_name = light_info[0].value<std::string>().value();
+    std::cout << "\treading rectangles...\n";
+    if (config.contains("rectangles")) {
+        const auto &rectangles = *config.get_as<toml::array>("rectangles");
+        for (auto &&rect : rectangles) {
+            const auto rect_info = *rect.as_array();
             point_t points[3];
-            for (int i = 1; i < 4; i++) {
-                const auto vert = parse_vec(*light_info[i].as_array(), 0, 3);
-                points[i - 1] = point_t{vert.data()};
+            for (int i = 0; i < 3; i++) {
+                const auto vert = parse_vec(*rect_info[i].as_array(), 0, 3);
+                points[i] = point_t{vert.data()};
             }
-            const auto rgb = parse_vec(light_info, 4, 3);
-            const auto mat = std::make_shared<light>(color_t{rgb[0], rgb[1], rgb[2]});
-            if (light_name == "triangle") {
-                world.push_back(std::make_shared<triangle>(points[0], points[1], points[2], tex, mat));
-            } else if (light_name == "rectangle") {
-                world.push_back(std::make_shared<rectangle>(points[0], points[1], points[2], mat));
-            } else {
-                std::cerr << "unknown light shape: " << light_name << "\n";
-            }
+            const auto mat_name = rect_info[3].value<std::string>().value();
+            const auto rect_mat = mat_tbl.at(mat_name);
+            world.push_back(std::make_shared<rectangle>(points[0], points[1], points[2], rect_mat));
         }
     }
 
