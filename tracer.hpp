@@ -141,7 +141,8 @@ public:
         if (config_.use_bvh) {
             std::cout << "BVH building: started...\n";
             auto start = std::chrono::steady_clock::now();
-            bvh_node bvh{world, 0, world.size()};
+            world_t world_cp = world;
+            bvh_node bvh{world_cp, 0, world_cp.size()};
             auto end = std::chrono::steady_clock::now();
             std::cout << "BVH building: done in " << std::chrono::duration<double>(end - start).count() << "s.\n\n";
             if (config_.parallel) {

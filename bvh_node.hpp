@@ -22,9 +22,10 @@ public:
     bvh_node() = default;
 
     /**
-     * @brief 构建包含场景给定范围 [start, end) 的物体的BVH树
+     * @brief 构建包含场景给定范围 [start, end) 的物体的BVH树<br>
+     * 因为要对物体排序, 所以world参数不是const的
      */
-    bvh_node(const world_t &world, std::size_t start, std::size_t end) {
+    bvh_node(world_t &world, std::size_t start, std::size_t end) {
         auto compare = [](const std::shared_ptr<hittable> &h1, const std::shared_ptr<hittable> &h2, int axis) {
             const auto box1 = h1->bounding_box(), box2 = h2->bounding_box();
             if (!box1.has_value() || !box2.has_value()) {
@@ -46,11 +47,10 @@ public:
                 std::swap(left_, right_);
             }
         } else {
-            auto objects = world;
-            std::sort(objects.begin() + start, objects.begin() + end, comparator);
+            std::sort(world.begin() + start, world.begin() + end, comparator);
             std::size_t mid = start + span / 2;
-            left_ = std::make_shared<bvh_node>(objects, start, mid);
-            right_ = std::make_shared<bvh_node>(objects, mid, end);
+            left_ = std::make_shared<bvh_node>(world, start, mid);
+            right_ = std::make_shared<bvh_node>(world, mid, end);
         }
         const auto box_l = left_->bounding_box(), box_r = right_->bounding_box();
         if (!box_l.has_value() || !box_r.has_value()) {

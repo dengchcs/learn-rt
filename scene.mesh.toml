@@ -33,8 +33,8 @@ width = 600             # 图片宽度
 height = 400            # 图片高度
 
 [options]
-samples_per_pixel = 100 # 每个像素的采样数
-max_depth = 50         # 递归的最大层数
+samples_per_pixel = 500 # 每个像素的采样数
+max_depth = 100         # 递归的最大层数
 use_bvh = true          # 是否使用bvh加速
 parallel = true         # 是否并行渲染
 
