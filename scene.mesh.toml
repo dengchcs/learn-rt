@@ -1,9 +1,9 @@
 # 纹理名称, 纹理类型, 纹理参数
 # 纹理名称应该是唯一的, 可以在材质定义中引用
 textures = [
-    ["tex-red",     "solid", 1, 0, 0],
-    ["tex-green",   "solid", 0, 1, 0],
-    ["tex-blue",    "solid", 0, 0, 1],
+    ["tex-red",     "solid", 0.54, 0, 0],
+    ["tex-green",   "solid", 0, 0.4, 0],
+    ["tex-blue",    "solid", 0, 0, 0.54],
     ["tex-silver",  "solid", 0.72, 0.72, 0.72],
     ["tex-gray",    "solid", 0.1, 0.1, 0.1],
     ["tex-earth",   "image", "../assets/earthmap.jpg"],
@@ -14,32 +14,35 @@ textures = [
 materials = [
     ["mat-lam-red",         "lambertian",   true,   "tex-red"],
     ["mat-metal-red",       "metal",        true,   "tex-red", 0],
-    ["mat-metal-silver",    "metal",        true,   "tex-silver", 0.01],
+    ["mat-metal-silver",    "metal",        true,   "tex-silver", 0],
     ["mat-lam-gray",        "lambertian",   true,   "tex-gray"],
+    ["mat-metal-gray",      "metal",        true,   "tex-gray", 0],
     ["mat-lam-green",       "lambertian",   true,   "tex-green"],
+    ["mat-metal-green",     "metal",        true,   "tex-green", 0],
     ["mat-lam-blue",        "lambertian",   true,   "tex-blue"],
+    ["mat-metal-blue",      "metal",        true,   "tex-blue", 0],
     ["mat-light-white",     "light",        false,  10, 10, 10],
     ["mat-metal-earth",     "metal",        true,   "tex-earth", 0],
 ]
 
 # 球心x,y,z坐标, 球半径, 材质名称
 spheres = [
-    [0, 0, 0.2, 0.2, "mat-metal-earth"],
-    # [0, -1000.5, 0, 1000, "mat-lam-gray"],
+    [0.4, -0.2, 0.2, 0.2, "mat-metal-earth"],
 ]
 
 rectangles = [
     [[-1, 1, -1], [2, 0, 0], [0, 0, 2], "mat-lam-red"], # 顶面
-    [[-0.5, 0.99, -0.5], [1, 0, 0], [0, 0, 1], "mat-light-white"],
+    [[-0.8, 0.99, -0.8], [1.6, 0, 0], [0, 0, 1.6], "mat-light-white"],
     [[-1, 1, -1], [2, 0, 0], [0, -2, 0], "mat-lam-gray"], # 前面
-    [[-1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-gray"], # 左侧面
-    [[1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-gray"], # 右侧面
+    [[-1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-green"], # 左侧面
+    [[1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-blue"], # 右侧面
     [[-1, -1, -1], [2, 0, 0], [0, 0, 2], "mat-lam-gray"], # 底面
 ]
 
-# 三角面片模型路线, 材质(只支持纯色材质)
+# 三角面片模型路径, 材质(只支持纯色纹理), 中心平移量, 表面到中心点的最长距离
+# 中心定义为所有顶点的平均值, 平移量和距离是为了调整模型位置和大小设置的
 meshes = [
-    ["../assets/bun_zipper.ply", "mat-lam-gray"],
+    ["../assets/bun_zipper.ply", "mat-lam-gray", [-0.1, 0, 0], 0.4],
 ]
 
 [canvas]

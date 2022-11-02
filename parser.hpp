@@ -14,7 +14,10 @@
 #include "triangle.hpp"
 #include "deps/happly.h"
 #include "deps/toml.hpp"
+#include <algorithm>
+#include <execution>
 #include <map>
+#include <numeric>
 #include <string>
 
 world_t random_world() {
@@ -60,6 +63,32 @@ world_t random_world() {
     world.push_back(std::make_shared<sphere>(point_t(4, 1, 0), 1.0, material3));
 
     return world;
+}
+
+void transform_mesh(std::vector<std::array<double, 3>> &vertices, const vec3_t &translate, double scale) {
+    using vert_t = std::array<double, 3>;
+    const auto num_vert = vertices.size();
+    auto point_add = [](const vert_t &vert1, const vert_t &vert2) {
+        return vert_t{vert1[0] + vert2[0], vert1[1] + vert2[1], vert1[2] + vert2[2]};
+    };
+    auto center = std::reduce(std::execution::par_unseq, vertices.begin(), vertices.end(), vert_t{0.0, 0.0, 0.0},
+                              point_add);
+    center[0] /= num_vert, center[1] /= num_vert, center[2] /= num_vert;
+    auto distance = [](const vert_t &v1, const vert_t &v2) {
+        const auto d0 = v1[0] - v2[0], d1 = v1[1] - v2[1], d2 = v1[2] - v2[2];
+        return std::sqrt(d0 * d0 + d1 * d1 + d2 * d2);
+    };
+    const auto farmost = std::max_element(std::execution::par_unseq,
+                                          vertices.begin(), vertices.end(), [&](const vert_t &v1, const vert_t v2) {
+                return distance(v1, center) < distance(v2, center);
+            });
+    const auto dist = distance(*farmost, center);
+    scale /= dist;
+    std::for_each(std::execution::par_unseq, vertices.begin(), vertices.end(), [&](auto &&vert) {
+        vert[0] = (vert[0] - center[0]) * scale + translate[0];
+        vert[1] = (vert[1] - center[1]) * scale + translate[1];
+        vert[2] = (vert[2] - center[2]) * scale + translate[2];
+    });
 }
 
 std::vector<float> parse_vec(const toml::array &arr, int start, int cnt) {
@@ -175,8 +204,12 @@ world_t make_scene(const std::string &file) {
             const auto mesh_name = mesh_info[0].value<std::string>().value();
             const auto mat_name = mesh_info[1].value<std::string>().value();
             const auto mesh_mat = mat_tbl.at(mat_name);
+            const auto trans = parse_vec(*mesh_info[2].as_array(), 0, 3);
+            const vec3_t translate{trans.data()};
+            const auto scale = mesh_info[3].value<double>().value();
             happly::PLYData mesh_data(mesh_name);
-            const auto vertices = mesh_data.getVertexPositions();
+            auto vertices = mesh_data.getVertexPositions();
+            transform_mesh(vertices, translate, scale);
             const auto indices = mesh_data.getFaceIndices();
             for (auto &&index: indices) {
                 const auto v0 = vertices[index[0]], v1 = vertices[index[1]], v2 = vertices[index[2]];
@@ -190,7 +223,7 @@ world_t make_scene(const std::string &file) {
     std::cout << "\treading rectangles...\n";
     if (config.contains("rectangles")) {
         const auto &rectangles = *config.get_as<toml::array>("rectangles");
-        for (auto &&rect : rectangles) {
+        for (auto &&rect: rectangles) {
             const auto rect_info = *rect.as_array();
             point_t points[3];
             for (int i = 0; i < 3; i++) {
