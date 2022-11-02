@@ -83,12 +83,12 @@ private:
 
     template<typename T>
     void trace_sequential(const T &target, const std::string &path) {
-        std::cout << "writing data to " << path << ".\n";
+        std::cout << "scene rendering: started...\n";
+        std::cout << "\twriting data to " << path << ".\n";
         auto start = std::chrono::steady_clock::now();
         delete data_;
         data_ = new unsigned char[config_.width * config_.height * 3];
         for (int j = config_.height - 1; j >= 0; j--) {
-            std::cout << "lines remaining: " << j << "\n";
             for (int i = 0; i < config_.width; i++) {
                 color_t color{0, 0, 0};
                 for (int s = 0; s < config_.samples_per_pixel; s++) {
@@ -103,12 +103,13 @@ private:
         }
         stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
         auto end = std::chrono::steady_clock::now();
-        std::cout << "\ndone in " << std::chrono::duration<double>(end - start).count() << "s.\n";
+        std::cout << "scene rendering: done in " << std::chrono::duration<double>(end - start).count() << "s.\n\n";
     }
 
     template<typename T>
     void trace_parallel(const T &target, const std::string &path) {
-        std::cout << "writing data to " << path << ".\n";
+        std::cout << "scene rendering: started...\n";
+        std::cout << "\twriting data to " << path << ".\n";
         auto start = std::chrono::steady_clock::now();
         delete data_;
         data_ = new unsigned char[config_.width * config_.height * 3];
@@ -132,15 +133,17 @@ private:
                 });
         stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
         auto end = std::chrono::steady_clock::now();
-        std::cout << "\ndone in " << std::chrono::duration<double>(end - start).count() << "s.\n";
+        std::cout << "scene rendering: done in " << std::chrono::duration<double>(end - start).count() << "s.\n\n";
     }
 
 public:
     void trace(const world_t &world, const std::string &path) {
         if (config_.use_bvh) {
             std::cout << "BVH building: started...\n";
+            auto start = std::chrono::steady_clock::now();
             bvh_node bvh{world, 0, world.size()};
-            std::cout << "BVH building: done.\n\n";
+            auto end = std::chrono::steady_clock::now();
+            std::cout << "BVH building: done in " << std::chrono::duration<double>(end - start).count() << "s.\n\n";
             if (config_.parallel) {
                 trace_parallel(bvh, path);
             } else {

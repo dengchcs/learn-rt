@@ -21,7 +21,7 @@ spheres = [
 
 # 三角面片模型路线, 材质(只支持纯色材质)
 meshes = [
-    ["../assets/bun_zipper.ply", "mat1"],
+    ["../assets/bun_zipper.ply", "mat4"],
 ]
 
 lights = [
