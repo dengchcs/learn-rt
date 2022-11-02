@@ -7,6 +7,7 @@
 
 #include "hittable.hpp"
 #include <iostream>
+#include <limits>
 
 class triangle : public hittable {
     point_t vertices_[3];
@@ -51,7 +52,7 @@ public:
         }
         const float area = (vertices_[1] - vertices_[0]).cross(vertices_[2] - vertices_[0]).len();
         const float diff = std::abs(bary[0] + bary[1] + bary[2] - area);
-        if (diff > FLT_EPSILON) {
+        if (diff > std::numeric_limits<float>::epsilon()) {
             return std::nullopt;
         }
         for (auto &&b: bary) {
@@ -74,8 +75,9 @@ public:
     }
 
     [[nodiscard]] std::optional<aabb> bounding_box() const override {
-        float coord_min[3] = {FLT_MAX, FLT_MAX, FLT_MAX};
-        float coord_max[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+        const auto inf = std::numeric_limits<float>::max();
+        float coord_min[3] = {inf, inf, inf};
+        float coord_max[3] = {-inf, -inf, -inf};
         for (auto &&vertex: vertices_) {
             for (int k = 0; k < 3; k++) {   // x,y,z维度
                 coord_min[k] = std::min(coord_min[k], vertex[k]);
