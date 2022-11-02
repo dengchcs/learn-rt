@@ -26,6 +26,7 @@ public:
         int samples_per_pixel;
         int max_depth;
         bool use_bvh, parallel;
+        color_t background;
     };
 
     tracer(const config &conf, const camera &cam) : config_(conf), cam_(cam) {
@@ -51,15 +52,14 @@ private:
         } else if constexpr (std::is_same_v<T, world_t>) {
             record = hit(target, r, 0.001, g_infinity);
         }
-        const color_t background{0.1, 0.1, 0.1};
-        if (! record.has_value()) {
-            return background;
+        if (!record.has_value()) {
+            return config_.background;
         }
         ray scattered;
         color_t attenuation;
         const color_t emitted = record->pmat->emit(record->u, record->v, record->point);
         const bool scatter = record->pmat->scatter(r, record.value(), attenuation, scattered);
-        if (! scatter) {
+        if (!scatter) {
             return emitted;
         }
         return emitted + attenuation * cast_ray(scattered, target, depth - 1);

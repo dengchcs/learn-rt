@@ -8,6 +8,7 @@
 #include "camera.hpp"
 #include "hittable.hpp"
 #include "material.hpp"
+#include "rectangle.hpp"
 #include "sphere.hpp"
 #include "tracer.hpp"
 #include "triangle.hpp"
@@ -182,16 +183,23 @@ world_t make_scene(const std::string &file) {
     if (config.contains("lights")) {
         const auto &lights = *config.get_as<toml::array>("lights");
         float tex[6] = {0, 0, 0, 0, 0, 0};
-        for (auto &&ligh : lights) {
+        for (auto &&ligh: lights) {
             const auto light_info = *ligh.as_array();
+            const auto light_name = light_info[0].value<std::string>().value();
             point_t points[3];
-            for (int i = 0; i < 3; i++) {
+            for (int i = 1; i < 4; i++) {
                 const auto vert = parse_vec(*light_info[i].as_array(), 0, 3);
-                points[i] = point_t{vert.data()};
+                points[i - 1] = point_t{vert.data()};
             }
-            const auto rgb = parse_vec(light_info, 3, 3);
+            const auto rgb = parse_vec(light_info, 4, 3);
             const auto mat = std::make_shared<light>(color_t{rgb[0], rgb[1], rgb[2]});
-            world.push_back(std::make_shared<triangle>(points[0], points[1], points[2], tex, mat));
+            if (light_name == "triangle") {
+                world.push_back(std::make_shared<triangle>(points[0], points[1], points[2], tex, mat));
+            } else if (light_name == "rectangle") {
+                world.push_back(std::make_shared<rectangle>(points[0], points[1], points[2], mat));
+            } else {
+                std::cerr << "unknown light shape: " << light_name << "\n";
+            }
         }
     }
 
@@ -204,6 +212,8 @@ tracer make_tracer(const std::string &file) {
     const auto config = toml::parse_file(file);
     const int width = config["canvas"]["width"].value<int>().value();
     const int height = config["canvas"]["height"].value<int>().value();
+    const auto bkg_vec = parse_vec(*config["canvas"]["background"].as_array(), 0, 3);
+    const color_t bkg{bkg_vec.data()};
     const int samples_per_pixel = config["options"]["samples_per_pixel"].value<int>().value();
     const int max_depth = config["options"]["max_depth"].value<int>().value();
     const bool use_bvh = config["options"]["use_bvh"].value<bool>().value();
@@ -212,6 +222,7 @@ tracer make_tracer(const std::string &file) {
             width, height,
             samples_per_pixel,
             max_depth, use_bvh, parallel,
+            bkg
     };
 
     const float aspect_ratio = (float) width / (float) height;
