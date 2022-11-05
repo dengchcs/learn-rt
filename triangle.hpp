@@ -74,7 +74,7 @@ public:
         return rec;
     }
 
-    [[nodiscard]] std::optional<aabb> bounding_box() const override {
+    [[nodiscard]] aabb bounding_box() const override {
         const auto inf = std::numeric_limits<float>::max();
         float coord_min[3] = {inf, inf, inf};
         float coord_max[3] = {-inf, -inf, -inf};

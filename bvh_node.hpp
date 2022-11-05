@@ -26,18 +26,15 @@ public:
      * 因为要对物体排序, 所以world参数不是const的
      */
     bvh_node(world_t &world, std::size_t start, std::size_t end) {
-        auto compare = [](const std::shared_ptr<hittable> &h1, const std::shared_ptr<hittable> &h2, int axis) {
-            const auto box1 = h1->bounding_box(), box2 = h2->bounding_box();
-            if (!box1.has_value() || !box2.has_value()) {
-                std::cerr << "no bounding box\n";
-            }
-            return box1->low()[axis] < box2->low()[axis];
+        aabb bounds = world[start]->bounding_box();
+        for (auto i = start; i < end; i++) {
+            bounds = bounds.union_with(world[i]->bounding_box());
+        }
+        const int dim = bounds.max_extent_dim();
+        auto comparator = [dim](const std::shared_ptr<hittable> &h1, const std::shared_ptr<hittable> &h2) {
+            const auto c1 = h1->bounding_box().centroid(), c2 = h2->bounding_box().centroid();
+            return c1[dim] < c2[dim];
         };
-        const int axis = random_int(0, 2);
-        auto comparator = [&](const std::shared_ptr<hittable> &h1, const std::shared_ptr<hittable> &h2) {
-            return compare(h1, h2, axis);
-        };
-
         const auto span = end - start;
         if (span == 1) {
             left_ = right_ = world[start];
@@ -48,15 +45,12 @@ public:
             }
         } else {
             std::sort(world.begin() + start, world.begin() + end, comparator);
-            std::size_t mid = start + span / 2;
+            const auto mid = start + span / 2;
             left_ = std::make_shared<bvh_node>(world, start, mid);
             right_ = std::make_shared<bvh_node>(world, mid, end);
         }
         const auto box_l = left_->bounding_box(), box_r = right_->bounding_box();
-        if (!box_l.has_value() || !box_r.has_value()) {
-            std::cerr << "no bounding box\n";
-        }
-        bounding_ = box_l->union_with(box_r.value());
+        bounding_ = box_l.union_with(box_r);
     }
 
 public:
@@ -73,7 +67,7 @@ public:
         }
     }
 
-    [[nodiscard]] std::optional<aabb> bounding_box() const override {
+    [[nodiscard]] aabb bounding_box() const override {
         return bounding_;
     }
 };

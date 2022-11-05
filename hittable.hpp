@@ -27,7 +27,7 @@ class hittable {
 public:
     [[nodiscard]] virtual std::optional<hit_record> hit(const ray &r, float tmin, float tmax) const = 0;
 
-    [[nodiscard]] virtual std::optional<aabb> bounding_box() const = 0;
+    [[nodiscard]] virtual aabb bounding_box() const = 0;
 };
 
 using world_t = std::vector<std::shared_ptr<hittable>>;
@@ -45,15 +45,14 @@ using world_t = std::vector<std::shared_ptr<hittable>>;
     return res;
 }
 
-[[nodiscard]] std::optional<aabb> bounding_box(const world_t &world) {
-    if (world.empty()) return std::nullopt;
+[[nodiscard]] aabb bounding_box(const world_t &world) {
+    assert(! world.empty());
 
-    std::optional<aabb> temp_box, output;
+    aabb temp_box, output;
     bool is_first = true;
     for (auto &&object: world) {
         temp_box = object->bounding_box();
-        if (!temp_box.has_value()) return std::nullopt;
-        output = is_first ? temp_box : output->union_with(temp_box.value());
+        output = is_first ? temp_box : output.union_with(temp_box);
         is_first = false;
     }
     return output;

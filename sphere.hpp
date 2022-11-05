@@ -76,7 +76,7 @@ public:
         return record;
     }
 
-    [[nodiscard]] std::optional<aabb> bounding_box() const override {
+    [[nodiscard]] aabb bounding_box() const override {
         const float absr = std::abs(radius_);
         const vec3_t disp{absr, absr, absr};
         return aabb{center_ - disp, center_ + disp};

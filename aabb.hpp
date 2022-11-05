@@ -16,7 +16,12 @@ class aabb {
     point_t low_;
     point_t high_;
 public:
-    aabb() = default;
+    aabb() {
+        const auto nlow = std::numeric_limits<float>::lowest();
+        const auto nhigh = std::numeric_limits<float>::max();
+        low_ = {nhigh, nhigh, nhigh};
+        high_ = {nlow, nlow, nlow};
+    }
 
     aabb(const point_t &low, const point_t &high) : low_(low), high_(high) {
 
@@ -65,6 +70,18 @@ public:
     [[nodiscard]] point_t low() const { return low_; }
 
     [[nodiscard]] point_t high() const { return high_; }
+
+    [[nodiscard]] int max_extent_dim() const {
+        float ext[3];
+        for (int i = 0; i < 3; i++) {
+            ext[i] = std::abs(low_[i] - high_[i]);
+        }
+        return std::distance(ext, std::max_element(ext, ext + 3));
+    }
+
+    [[nodiscard]] point_t centroid() const {
+        return (low_ + high_) / 2.0;
+    }
 };
 
 #endif //RT_AABB_HPP
