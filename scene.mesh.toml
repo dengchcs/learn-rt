@@ -5,7 +5,7 @@ textures = [
     ["tex-green",   "solid", 0, 0.4, 0],
     ["tex-blue",    "solid", 0, 0, 0.54],
     ["tex-silver",  "solid", 0.72, 0.72, 0.72],
-    ["tex-gray",    "solid", 0.1, 0.1, 0.1],
+    ["tex-gray",    "solid", 0.01, 0.01, 0.01],
     ["tex-earth",   "image", "../assets/earthmap.jpg"],
 ]
 
@@ -21,8 +21,8 @@ materials = [
     ["mat-metal-green",     "metal",        true,   "tex-green", 0],
     ["mat-lam-blue",        "lambertian",   true,   "tex-blue"],
     ["mat-metal-blue",      "metal",        true,   "tex-blue", 0],
-    ["mat-light-white",     "light",        false,  10, 10, 10],
-    ["mat-metal-earth",     "metal",        true,   "tex-earth", 0],
+    ["mat-light-white",     "light",        false,  100, 100, 100],
+    ["mat-metal-earth",     "metal",        true,   "tex-earth", 0.1],
 ]
 
 # 球心x,y,z坐标, 球半径, 材质名称
@@ -34,8 +34,8 @@ rectangles = [
     [[-1, 1, -1], [2, 0, 0], [0, 0, 2], "mat-lam-red"], # 顶面
     [[-0.8, 0.99, -0.8], [1.6, 0, 0], [0, 0, 1.6], "mat-light-white"],
     [[-1, 1, -1], [2, 0, 0], [0, -2, 0], "mat-lam-gray"], # 前面
-    [[-1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-green"], # 左侧面
-    [[1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-blue"], # 右侧面
+    [[-1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-gray"], # 左侧面
+    [[1, 1, -1], [0, -2, 0], [0, 0, 2], "mat-lam-gray"], # 右侧面
     [[-1, -1, -1], [2, 0, 0], [0, 0, 2], "mat-lam-gray"], # 底面
 ]
 
