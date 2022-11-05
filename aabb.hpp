@@ -82,6 +82,11 @@ public:
     [[nodiscard]] point_t centroid() const {
         return (low_ + high_) / 2.0;
     }
+
+    [[nodiscard]] float area() const {
+        const auto diagonal = high_ - low_;
+        return 2 * (diagonal[0] * (diagonal[1] + diagonal[2]) + diagonal[1] * diagonal[2]);
+    }
 };
 
 #endif //RT_AABB_HPP

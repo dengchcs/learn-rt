@@ -5,7 +5,7 @@
 #ifndef RT_TRACER_HPP
 #define RT_TRACER_HPP
 
-#include "bvh_node.hpp"
+#include "bvh.hpp"
 #include "camera.hpp"
 #include "common.hpp"
 #include "hittable.hpp"
@@ -47,10 +47,12 @@ private:
             return {0, 0, 0};
         }
         std::optional<hit_record> record = std::nullopt;
-        if constexpr (std::is_same_v<T, bvh_node>) {
+        if constexpr (std::is_same_v<T, bvh>) {
             record = target.hit(r, 0.001, g_infinity);
         } else if constexpr (std::is_same_v<T, world_t>) {
             record = hit(target, r, 0.001, g_infinity);
+        } else {
+            std::cerr << "unknown target type\n";
         }
         if (!record.has_value()) {
             return config_.background;
@@ -142,7 +144,7 @@ public:
             std::cout << "BVH building: started...\n";
             auto start = std::chrono::steady_clock::now();
             world_t world_cp = world;
-            bvh_node bvh{world_cp, 0, world_cp.size()};
+            bvh bvh{world_cp, 0, (int) world_cp.size()};
             auto end = std::chrono::steady_clock::now();
             std::cout << "BVH building: done in " << std::chrono::duration<double>(end - start).count() << "s.\n\n";
             if (config_.parallel) {

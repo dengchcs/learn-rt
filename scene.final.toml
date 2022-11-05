@@ -80,7 +80,7 @@ height = 300            # 图片高度
 background = [0.01, 0.01, 0.01] # 背景色
 
 [options]
-samples_per_pixel = 50 # 每个像素的采样数
+samples_per_pixel = 100 # 每个像素的采样数
 max_depth = 25         # 递归的最大层数
 use_bvh = true          # 是否使用bvh加速
 parallel = true         # 是否并行渲染

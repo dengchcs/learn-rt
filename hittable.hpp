@@ -45,17 +45,13 @@ using world_t = std::vector<std::shared_ptr<hittable>>;
     return res;
 }
 
-[[nodiscard]] aabb bounding_box(const world_t &world) {
-    assert(! world.empty());
-
-    aabb temp_box, output;
-    bool is_first = true;
-    for (auto &&object: world) {
-        temp_box = object->bounding_box();
-        output = is_first ? temp_box : output.union_with(temp_box);
-        is_first = false;
+[[nodiscard]] aabb bounding_box(const world_t &world, int start, int end) {
+    assert(end - start > 0);
+    aabb bound = world[start]->bounding_box();
+    for (int i = start + 1; i < end; i++) {
+        bound = bound.union_with(world[i]->bounding_box());
     }
-    return output;
+    return bound;
 }
 
 #endif //RT_HITTABLE_HPP
