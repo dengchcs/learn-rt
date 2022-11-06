@@ -24,7 +24,7 @@ materials = [
     ["mat-metal-green",     "metal",        true,   "tex-green", 0],
     ["mat-lam-blue",        "lambertian",   true,   "tex-blue"],
     ["mat-metal-blue",      "metal",        true,   "tex-blue", 0],
-    ["mat-light-white",     "light",        false,  7, 7, 7],
+    ["mat-light-white",     "light",        false,  4, 4, 4],
     ["mat-metal-earth",     "metal",        true,   "tex-earth", 0.1],
     ["mat-lam-face",        "lambertian",   true,   "tex-face"],
     ["mat-liquid",          "dielectric",   false,  1.5],
@@ -37,6 +37,8 @@ spheres = [
     [20, 0, 15, 10, "mat-metal-earth"], # 地球
     [-20, 5, 10, 5, "mat-liquid"],      # 透明体
     [35, -35, -35, 15, "mat-metal-silver"], # 镜面
+    [0, -10, 30, 5, "mat-liquid"],
+    [0, -10, 30, -4.9, "mat-liquid"],
 ]
 
 # 三角形定义: 三个带纹理坐标的顶点+材质名称, 若未使用纹理则可将纹理坐标设为0

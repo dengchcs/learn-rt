@@ -5,6 +5,7 @@
 #ifndef RT_COMMON_HPP
 #define RT_COMMON_HPP
 
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <limits>
@@ -12,7 +13,7 @@
 class unit_vec3;
 
 class vector3 {
-    float e[3];
+    std::array<float, 3> e;
 public:
     vector3() : e{0, 0, 0} {}
 
@@ -128,11 +129,17 @@ public:
 };
 
 class unit_vec3 : public vector3 {
+    unit_vec3(float x, float y, float z) : vector3(x, y, z) {}
+
 public:
     unit_vec3() : vector3() {}
 
     explicit unit_vec3(const vector3 &vec) : vector3(vec) {
         this->normalize();
+    }
+
+    inline friend unit_vec3 operator-(const unit_vec3 &v) {
+        return {-v[0], -v[1], -v[2]};
     }
 };
 

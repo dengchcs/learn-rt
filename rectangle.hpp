@@ -15,8 +15,8 @@ class rectangle : public hittable {
     unit_vec3 normal_;
     std::shared_ptr<material> pmat_;
 public:
-    rectangle(const point_t& p, const vec3_t& edgeu, const vec3_t& edgev, std::shared_ptr<material> pmat)
-    : corner_(p), edge_u_(edgeu), edge_v_(edgev), pmat_(std::move(pmat)) {
+    rectangle(const point_t &p, const vec3_t &edgeu, const vec3_t &edgev, std::shared_ptr<material> pmat)
+            : corner_(p), edge_u_(edgeu), edge_v_(edgev), pmat_(std::move(pmat)) {
         normal_ = edgeu.cross(edgev).normalized();
         if (normal_.len_sq() == 0) {
             std::cerr << "bad rectangle: collinear edge\n";
@@ -45,8 +45,8 @@ public:
         hit_record record;
         record.ray_param = t;
         record.point = point;
-        record.outside = true;
-        record.normal = divisor < 0 ? normal_ : unit_vec3{-normal_};
+        record.outside = divisor < 0;
+        record.normal = divisor < 0 ? normal_ : -normal_;
         record.u = u, record.v = v;
         record.pmat = pmat_;
         return record;

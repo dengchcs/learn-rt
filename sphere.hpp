@@ -47,18 +47,17 @@ public:
 
     [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin, float tmax) const override {
         const vec3_t oc = r.origin() - center_;
-        const float a = 1;
-        const float b = 2.0f * oc.dot(r.direction());
+        const float b_half = oc.dot(r.direction());
         const float c = oc.len_sq() - radius_ * radius_;
-        const float discriminant = b * b - 4 * a * c;
+        const float discriminant = b_half * b_half - c;
         if (discriminant < 0) {
             return std::nullopt;
         }
 
         const float sqrtd = std::sqrt(discriminant);
-        float root = (-b - sqrtd) / (2.0f * a);
+        float root = -b_half - sqrtd;
         if (root < tmin || root > tmax) {
-            root = (-b + sqrtd) / (2.0f * a);
+            root = -b_half + sqrtd;
             if (root < tmin || root > tmax) {
                 return std::nullopt;
             }
@@ -67,10 +66,11 @@ public:
         hit_record record;
         record.ray_param = root;
         record.point = r.point_at(record.ray_param);
-        record.normal = unit_vec3{record.point - center_};
-        if (radius_ < 0) record.normal *= -1;
-        record.outside = r.direction().dot(record.normal) < 0;
-        if (!record.outside) record.normal *= -1;
+        record.normal = unit_vec3(record.point - center_);
+        record.outside = r.direction().dot(record.normal) < 0 == radius_ > 0;
+        if (record.outside == radius_ < 0) {
+            record.normal = -record.normal;
+        }
         uv_at(record.point, record.u, record.v);
         record.pmat = pmat_;
         return record;
