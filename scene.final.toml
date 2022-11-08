@@ -6,30 +6,26 @@ textures = [
     ["tex-blue",    "solid", 0, 0, 0.54],
     ["tex-rice",    "solid", 0.96, 0.96, 0.86],
     ["tex-silver",  "solid", 0.72, 0.72, 0.72],
-    ["tex-gray",    "solid", 0.01, 0.01, 0.01],
     ["tex-rabbit",  "solid", 0.98, 0.07, 0.57],
     ["tex-earth",   "image", "../assets/earthmap.jpg"],
     ["tex-face",    "image", "../assets/awesomeface.jpg"],
+    ["tex-board",   "image", "../assets/board.jpg"],
 ]
 
 # 材质名称, 材质类型, 是否使用纹理, 若是则提供纹理名称, 否则提供材质参数
 # 材质名称应该是唯一的, 可以在物体定义中引用
 materials = [
     ["mat-lam-red",         "lambertian",   true,   "tex-red"],
-    ["mat-metal-red",       "metal",        true,   "tex-red", 0],
-    ["mat-metal-silver",    "metal",        true,   "tex-silver", 0],
-    ["mat-lam-gray",        "lambertian",   true,   "tex-gray"],
-    ["mat-metal-gray",      "metal",        true,   "tex-gray", 0],
     ["mat-lam-green",       "lambertian",   true,   "tex-green"],
-    ["mat-metal-green",     "metal",        true,   "tex-green", 0],
     ["mat-lam-blue",        "lambertian",   true,   "tex-blue"],
-    ["mat-metal-blue",      "metal",        true,   "tex-blue", 0],
-    ["mat-light-white",     "light",        false,  4, 4, 4],
-    ["mat-metal-earth",     "metal",        true,   "tex-earth", 0.1],
-    ["mat-lam-face",        "lambertian",   true,   "tex-face"],
-    ["mat-liquid",          "dielectric",   false,  1.5],
-    ["mat-lam-rabbit",      "lambertian",   true,   "tex-rabbit"],
     ["mat-lam-rice",        "lambertian",   true,   "tex-rice"],
+    ["mat-lam-rabbit",      "lambertian",   true,   "tex-rabbit"],
+    ["mat-lam-board",       "lambertian",   true,   "tex-board"],
+    ["mat-lam-face",        "lambertian",   true,   "tex-face"],
+    ["mat-metal-silver",    "metal",        true,   "tex-silver", 0],
+    ["mat-metal-earth",     "metal",        true,   "tex-earth", 0.1],
+    ["mat-liquid",          "dielectric",   false,  1.5],
+    ["mat-light-white",     "light",        false,  4, 4, 4],
 ]
 
 # 球心x,y,z坐标, 球半径, 材质名称
@@ -54,11 +50,11 @@ triangles = [
 rectangles = [
     # "屋子"+顶部光照
     [[-50, 50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 顶面
-    [[-20, 49.9, -20], [40, 0, 0], [0, 0, 40], "mat-light-white"],
+    [[-20, 49.9, -20], [40, 0, 0], [0, 0, 40], "mat-light-white"], # 顶光
     [[-50, 50, -50], [100, 0, 0], [0, -100, 0], "mat-lam-rice"], # 前面
     [[-50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-red"], # 左侧面
     [[50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-green"], # 右侧面
-    [[-50, -50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 底面
+    [[-50, -50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-board"], # 底面
     [[-50, -50, 50], [100, 0, 0], [0, 100, 0], "mat-lam-rice"], # 后面
 
     # 一个立方体
@@ -82,8 +78,8 @@ height = 300            # 图片高度
 background = [0.01, 0.01, 0.01] # 背景色
 
 [options]
-samples_per_pixel = 100 # 每个像素的采样数
-max_depth = 25         # 递归的最大层数
+samples_per_pixel = 1024 # 每个像素的采样数
+max_depth = 10         # 递归的最大层数
 use_bvh = true          # 是否使用bvh加速
 parallel = true         # 是否并行渲染
 
