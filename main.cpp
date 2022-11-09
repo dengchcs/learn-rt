@@ -8,8 +8,9 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "program started...\n\n";
     auto start = std::chrono::steady_clock::now();
-    auto world = make_scene(argv[1]);
-    auto my_tracer = make_tracer(argv[1]);
+    parser p{argv[1]};
+    auto world = p.make_scene();
+    auto my_tracer = p.make_tracer();
     std::string path = "../images/" + current_time() + ".png";
     my_tracer.trace(world, path);
     auto end = std::chrono::steady_clock::now();
