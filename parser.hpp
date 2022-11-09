@@ -24,6 +24,12 @@
 class parser {
     std::string file_;
 
+    struct transf {
+        double scale{1};
+        vec3_t translate;
+        vec3_t rotate;
+    };
+
     static std::vector<float> parse_vec(const toml::array &arr, int start, int cnt) {
         std::vector<float> vec(cnt);
         for (int i = start; i < start + cnt; i++) {
@@ -32,7 +38,25 @@ class parser {
         return vec;
     }
 
-    static void transform_mesh(std::vector<std::array<double, 3>> &vertices, const vec3_t &translate, double scale) {
+    static auto rotate(const std::array<double, 3> &vert, const vec3_t &rot) {
+        const auto cx = cos(rot[0]), cy = cos(rot[1]), cz = cos(rot[2]);
+        const auto sx = sin(rot[0]), sy = sin(rot[1]), sz = sin(rot[2]);
+        auto res = vert;
+        std::array<std::array<double, 3>, 3> rot_mat = {
+                std::array<double, 3>{
+                        cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz},
+                {
+                        cx * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz},
+                {
+                        -sy, sx * cy, cx * cy
+                }};
+        for (int i = 0; i < 3; i++) {
+            res[i] = std::inner_product(vert.begin(), vert.end(), rot_mat[i].begin(), 0.0);
+        }
+        return res;
+    }
+
+    static void transform_mesh(std::vector<std::array<double, 3>> &vertices, transf &trans) {
         using vert_t = std::array<double, 3>;
         const auto num_vert = vertices.size();
         auto point_add = [](const vert_t &vert1, const vert_t &vert2) {
@@ -50,11 +74,15 @@ class parser {
                     return distance(v1, center) < distance(v2, center);
                 });
         const auto dist = distance(*farmost, center);
-        scale /= dist;
+        trans.scale /= dist;
         std::for_each(std::execution::par_unseq, vertices.begin(), vertices.end(), [&](auto &&vert) {
-            vert[0] = (vert[0] - center[0]) * scale + translate[0];
-            vert[1] = (vert[1] - center[1]) * scale + translate[1];
-            vert[2] = (vert[2] - center[2]) * scale + translate[2];
+            vert[0] = (vert[0] - center[0]) * trans.scale;
+            vert[1] = (vert[1] - center[1]) * trans.scale;
+            vert[2] = (vert[2] - center[2]) * trans.scale;
+            vert = rotate(vert, trans.rotate);
+            vert[0] += trans.translate[0];
+            vert[1] += trans.translate[1];
+            vert[2] += trans.translate[2];
         });
     }
 
@@ -166,12 +194,20 @@ public:
                 const auto mesh_name = mesh_info[0].value<std::string>().value();
                 const auto mat_name = mesh_info[1].value<std::string>().value();
                 const auto mesh_mat = mat_tbl.at(mat_name);
-                const auto trans = parse_vec(*mesh_info[2].as_array(), 0, 3);
-                const vec3_t translate{trans.data()};
+
+                const auto translate = parse_vec(*mesh_info[2].as_array(), 0, 3);
                 const auto scale = mesh_info[3].value<double>().value();
+                const auto rotate = parse_vec(*mesh_info[4].as_array(), 0, 3);
+                transf transform{
+                        (float) scale, vec3_t{translate.data()}, vec3_t{rotate.data()}
+                };
+                for (int i = 0; i < 3; i++) {
+                    transform.rotate[i] *= (g_pi / 180);
+                }
                 happly::PLYData mesh_data(mesh_name);
                 auto vertices = mesh_data.getVertexPositions();
-                transform_mesh(vertices, translate, scale);
+                transform_mesh(vertices, transform);
+
                 const auto indices = mesh_data.getFaceIndices();
                 for (auto &&index: indices) {
                     const auto v0 = vertices[index[0]], v1 = vertices[index[1]], v2 = vertices[index[2]];

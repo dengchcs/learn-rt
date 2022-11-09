@@ -1,0 +1,66 @@
+# 纹理名称, 纹理类型, 纹理参数
+# 纹理名称应该是唯一的, 可以在材质定义中引用
+textures = [
+    ["tex-red",     "solid", 0.54, 0, 0],
+    ["tex-green",   "solid", 0, 0.4, 0],
+    ["tex-blue",    "solid", 0, 0, 0.54],
+    ["tex-rice",    "solid", 0.96, 0.96, 0.86],
+    ["tex-silver",  "solid", 0.75, 0.75, 0.75],
+    ["tex-buddha",  "solid", 0.85, 0.65, 0.13],
+    ["tex-dragon",  "solid", 0.69, 0.77, 0.87],
+    ["tex-man",     "solid", 0.00, 0.50, 0.00],
+]
+
+# 材质名称, 材质类型, 是否使用纹理, 若是则提供纹理名称, 否则提供材质参数
+# 材质名称应该是唯一的, 可以在物体定义中引用
+materials = [
+    ["mat-lam-red",         "lambertian",   true,   "tex-red"],
+    ["mat-lam-green",       "lambertian",   true,   "tex-green"],
+    ["mat-lam-blue",        "lambertian",   true,   "tex-blue"],
+    ["mat-lam-rice",        "lambertian",   true,   "tex-rice"],
+    ["mat-metal-silver",    "metal",        true,   "tex-silver", 0.1],
+    ["mat-metal-buddha",    "metal",        true,   "tex-buddha", 0.2],
+    ["mat-lam-dragon",      "lambertian",   true,   "tex-dragon"],
+    ["mat-metal-man",       "metal",        true,   "tex-man", 0.3],
+    ["mat-light-white",     "light",        false,  4, 4, 4],
+]
+
+# 矩形定义: 一个顶点+两条正交边+材质名称, 两条边分别被用作纹理映射的uv方向
+rectangles = [
+    # "屋子"+顶部光照
+    [[-50, 50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 顶面
+    [[-20, 49.9, -20], [40, 0, 0], [0, 0, 40], "mat-light-white"], # 顶光
+    [[-50, 50, -50], [100, 0, 0], [0, -100, 0], "mat-lam-rice"], # 前面
+    [[-50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-red"], # 左侧面
+    [[50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-green"], # 右侧面
+    [[-50, -50, -50], [100, 0, 0], [0, 0, 100], "mat-metal-silver"], # 底面
+    [[-50, -50, 50], [100, 0, 0], [0, 100, 0], "mat-lam-rice"], # 后面
+]
+
+# 三角面片模型路径, 材质(只支持纯色纹理), 中心平移量, 表面到中心点的最长距离, 绕XYZ轴的旋转度数(角度制)
+# "中心"定义为所有顶点的平均值, 平移量和距离是为了调整模型位置和大小设置的
+meshes = [
+    ["../assets/happy_vrip_res3.ply", "mat-metal-buddha", [0, -30, -15], 40, [0, 0, 0]],
+    ["../assets/happy_vrip_res3.ply", "mat-metal-buddha", [-30, -40, -30], 20, [0, +15, 0]],
+    ["../assets/happy_vrip_res3.ply", "mat-metal-buddha", [+30, -40, -30], 20, [0, -15, 0]],
+    ["../assets/dragon_vrip_res2.ply","mat-lam-dragon",   [35, -40, -5], 20, [0, 45, 0]],
+    ["../assets/Armadillo.ply",       "mat-metal-man",    [-30, -35, -5], 20, [0, 180, 0]],
+]
+
+[canvas]
+width = 400             # 图片宽度
+height = 300            # 图片高度
+background = [0.01, 0.01, 0.01] # 背景色
+
+[options]
+samples_per_pixel = 100 # 每个像素的采样数
+max_depth = 10         # 递归的最大层数
+use_bvh = true          # 是否使用bvh加速
+parallel = true         # 是否并行渲染
+
+[camera]
+lookfrom = [0, -10, 50]    # 相机位置
+lookat = [0, -10, -50]     # 焦点
+vup = [0, 1, 0]         # 相机上方向
+aperture = 0.0          # 相机"孔径", 孔径越大场景越模糊
+vfov = 90               # 竖直方向的视角, 角度值
