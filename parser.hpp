@@ -12,17 +12,19 @@
 #include "sphere.hpp"
 #include "tracer.hpp"
 #include "triangle.hpp"
+#include "utils.hpp"
 #include "deps/happly.h"
 #include "deps/toml.hpp"
 #include <algorithm>
 #include <execution>
+#include <filesystem>
 #include <map>
 #include <numeric>
 #include <string>
 #include <utility>
 
 class parser {
-    std::string file_;
+    std::filesystem::path scene_path_;  // 配置文件的(绝对)路径
 
     struct transf {
         double scale{1};
@@ -87,11 +89,14 @@ class parser {
     }
 
 public:
-    explicit parser(std::string file) : file_(std::move(file)) {}
+    explicit parser(const std::string &file) : scene_path_(file) {
+        scene_path_ = std::filesystem::absolute(scene_path_);
+        exist_or_abort(scene_path_, "scene config file");
+    }
 
     [[nodiscard]] world_t make_scene() const {
         std::cout << "scene reading: started...\n";
-        const auto config = toml::parse_file(file_);
+        const auto config = toml::parse_file(scene_path_.string());
 
         std::cout << "\treading textures...\n";
         const auto &textures = *config.get_as<toml::array>("textures");
@@ -102,7 +107,10 @@ public:
             const auto tex_type = tex_info[1].value<std::string>().value();
             if (tex_type == "image") {
                 const auto path = tex_info[2].value<std::string>().value();
-                tex_tbl.emplace(tex_name, std::make_shared<image_texture>(path));
+                auto image_path = scene_path_.parent_path();
+                image_path /= path;
+                exist_or_abort(image_path, "image file");
+                tex_tbl.emplace(tex_name, std::make_shared<image_texture>(image_path.string()));
             } else if (tex_type == "solid") {
                 const auto rgb = parse_vec(tex_info, 2, 3);
                 tex_tbl.emplace(tex_name, std::make_shared<solid_color>(rgb[0], rgb[1], rgb[2]));
@@ -191,7 +199,10 @@ public:
             float tex[6] = {0, 0, 0, 0, 0, 0};
             for (auto &&mesh: meshes) {
                 const auto mesh_info = *mesh.as_array();
-                const auto mesh_name = mesh_info[0].value<std::string>().value();
+                auto mesh_name = mesh_info[0].value<std::string>().value();
+                auto mesh_path = scene_path_.parent_path();
+                mesh_path /= mesh_name;
+                exist_or_abort(mesh_path, "mesh file");
                 const auto mat_name = mesh_info[1].value<std::string>().value();
                 const auto mesh_mat = mat_tbl.at(mat_name);
 
@@ -204,7 +215,8 @@ public:
                 for (int i = 0; i < 3; i++) {
                     transform.rotate[i] *= (g_pi / 180);
                 }
-                happly::PLYData mesh_data(mesh_name);
+
+                happly::PLYData mesh_data(mesh_path.string());
                 auto vertices = mesh_data.getVertexPositions();
                 transform_mesh(vertices, transform);
 
@@ -240,7 +252,7 @@ public:
 
     [[nodiscard]] tracer make_tracer() const {
         std::cout << "tracer configuring: started...\n";
-        const auto config = toml::parse_file(file_);
+        const auto config = toml::parse_file(scene_path_.string());
         const int width = config["canvas"]["width"].value<int>().value();
         const int height = config["canvas"]["height"].value<int>().value();
         const auto bkg_vec = parse_vec(*config["canvas"]["background"].as_array(), 0, 3);

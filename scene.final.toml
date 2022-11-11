@@ -7,9 +7,9 @@ textures = [
     ["tex-rice",    "solid", 0.96, 0.96, 0.86],
     ["tex-silver",  "solid", 0.72, 0.72, 0.72],
     ["tex-rabbit",  "solid", 0.98, 0.07, 0.57],
-    ["tex-earth",   "image", "../assets/earthmap.jpg"],
-    ["tex-face",    "image", "../assets/awesomeface.jpg"],
-    ["tex-board",   "image", "../assets/board.jpg"],
+    ["tex-earth",   "image", "assets/earthmap.jpg"],
+    ["tex-face",    "image", "assets/awesomeface.jpg"],
+    ["tex-board",   "image", "assets/board.jpg"],
 ]
 
 # 材质名称, 材质类型, 是否使用纹理, 若是则提供纹理名称, 否则提供材质参数
@@ -69,7 +69,7 @@ rectangles = [
 # 三角面片模型路径, 材质(只支持纯色纹理), 中心平移量, 表面到中心点的最长距离, 绕XYZ轴的旋转度数(角度制)
 # "中心"定义为所有顶点的平均值, 平移量和距离是为了调整模型位置和大小设置的
 meshes = [
-    ["../assets/bun_zipper.ply", "mat-lam-rabbit", [0, -30, -10], 30, [0, 30, 0]],
+    ["assets/bun_zipper.ply", "mat-lam-rabbit", [0, -30, -10], 30, [0, 30, 0]],
 ]
 
 [canvas]
@@ -78,7 +78,7 @@ height = 300            # 图片高度
 background = [0.01, 0.01, 0.01] # 背景色
 
 [options]
-samples_per_pixel = 1024 # 每个像素的采样数
+samples_per_pixel = 100 # 每个像素的采样数
 max_depth = 10         # 递归的最大层数
 use_bvh = true          # 是否使用bvh加速
 parallel = true         # 是否并行渲染

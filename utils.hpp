@@ -8,7 +8,9 @@
 #include "common.hpp"
 #include <chrono>
 #include <ctime>
+#include <filesystem>
 #include <iomanip>
+#include <iostream>
 #include <optional>
 #include <random>
 #include <sstream>
@@ -108,6 +110,9 @@ std::optional<unit_vec3> refract(const unit_vec3 &vec, const unit_vec3 &normal, 
     return unit_vec3{out_perp + out_para};
 }
 
+/**
+ * @brief 获取%H-%M-%S表示的时间串字符
+ */
 std::string current_time() {
     std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     auto ltime = std::localtime(&t);
@@ -115,5 +120,18 @@ std::string current_time() {
     ss << std::put_time(ltime, "%H-%M-%S");
     return ss.str();
 }
+
+/**
+ * @brief 检查文件(夹)是否存在, 如不存在则终止程序
+ * @param path 文件路径
+ * @param err_leader 错误信息头
+ */
+void exist_or_abort(const std::filesystem::path &path, const std::string &err_leader) {
+    if (!std::filesystem::exists(path)) {
+        std::cerr << err_leader << ' ' << path << " does not exist!\n";
+        std::abort();
+    }
+}
+
 
 #endif //RT_UTILS_HPP
