@@ -5,13 +5,14 @@
 #ifndef RT_BVH_HPP
 #define RT_BVH_HPP
 
+#include <algorithm>
+#include <execution>
+#include <iostream>
+
 #include "aabb.hpp"
 #include "common.hpp"
 #include "hittable.hpp"
 #include "utils.hpp"
-#include <algorithm>
-#include <execution>
-#include <iostream>
 
 class bvh {
     std::unique_ptr<bvh> left_, right_;
@@ -30,14 +31,18 @@ public:
             using phit = std::shared_ptr<hittable>;
             auto sort_world = [&](int dim) {
                 if (dim < 0 || dim > 2) {
-                    std::cerr << "bad dimension: dim = " << dim << ", start & end: " << start << " " << end << "\n";
+                    std::cerr << "bad dimension: dim = " << dim
+                              << ", start & end: " << start << " " << end
+                              << "\n";
                 }
-                std::sort(std::execution::par, world.begin() + start, world.begin() + end,
+                std::sort(std::execution::par, world.begin() + start,
+                          world.begin() + end,
                           [&](const phit &h1, const phit &h2) {
-                              return h1->bounding_box().centroid()[dim] < h2->bounding_box().centroid()[dim];
+                              return h1->bounding_box().centroid()[dim] <
+                                     h2->bounding_box().centroid()[dim];
                           });
             };
-            const int n_split = std::min(span - 1, 12); // 尝试几次划分
+            const int n_split = std::min(span - 1, 12);  // 尝试几次划分
             int min_idx = start + span / 2;
             auto min_cost = std::numeric_limits<double>::max();
             for (int dim = 0; dim < 3; dim++) {
@@ -63,7 +68,8 @@ public:
         }
     }
 
-    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin, float tmax) const {
+    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin,
+                                                float tmax) const {
         if (!bounding_.hit(r, tmin, tmax)) {
             return std::nullopt;
         }
@@ -80,4 +86,4 @@ public:
     }
 };
 
-#endif //RT_BVH_HPP
+#endif  // RT_BVH_HPP

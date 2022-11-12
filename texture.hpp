@@ -5,28 +5,32 @@
 #ifndef RT_TEXTURE_HPP
 #define RT_TEXTURE_HPP
 
+#include <iostream>
+
 #include "common.hpp"
 #include "utils.hpp"
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #endif
 #include "deps/stb_image.h"
-#include <iostream>
 
 class texture {
 public:
-    [[nodiscard]] virtual color_t color_at(float u, float v, const point_t &point) const = 0;
+    [[nodiscard]] virtual color_t color_at(float u, float v,
+                                           const point_t &point) const = 0;
 };
 
 class solid_color : public texture {
     color_t value_;
+
 public:
     explicit solid_color(const color_t &color) : value_(color) {}
 
     solid_color(float r, float g, float b) : value_(r, g, b) {}
 
 public:
-    [[nodiscard]] color_t color_at(float u, float v, const point_t &point) const override {
+    [[nodiscard]] color_t color_at(float u, float v,
+                                   const point_t &point) const override {
         return value_;
     }
 };
@@ -34,17 +38,21 @@ public:
 class image_texture : public texture {
     unsigned char *data_{nullptr};
     int width_{0}, height_{0};
+
 public:
-    explicit image_texture(const std::string& file) {
+    explicit image_texture(const std::string &file) {
         int comp_per_pixel = 3;
-        data_ = stbi_load(file.c_str(), &width_, &height_, &comp_per_pixel, comp_per_pixel);
+        data_ = stbi_load(file.c_str(), &width_, &height_, &comp_per_pixel,
+                          comp_per_pixel);
         if (data_ == nullptr) {
             std::cerr << "error loading texture\n";
         }
     }
     ~image_texture() { stbi_image_free(data_); }
+
 public:
-    [[nodiscard]] color_t color_at(float u, float v, const point_t &point) const override {
+    [[nodiscard]] color_t color_at(float u, float v,
+                                   const point_t &point) const override {
         u = clamp(u, 0.0f, 1.0f);
         v = 1.0f - clamp(v, 0.0f, 1.0f);
         const int i = std::min(width_ - 1, (int)(u * (float)width_));
@@ -55,4 +63,4 @@ public:
     }
 };
 
-#endif //RT_TEXTURE_HPP
+#endif  // RT_TEXTURE_HPP

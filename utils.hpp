@@ -5,7 +5,6 @@
 #ifndef RT_UTILS_HPP
 #define RT_UTILS_HPP
 
-#include "common.hpp"
 #include <chrono>
 #include <ctime>
 #include <filesystem>
@@ -14,6 +13,8 @@
 #include <optional>
 #include <random>
 #include <sstream>
+
+#include "common.hpp"
 
 inline float clamp(float x, float xmin, float xmax) {
     return std::max(xmin, std::min(x, xmax));
@@ -40,7 +41,8 @@ int random_int(int lower, int upper) {
  * @brief 在[xmin, xmax)^3的立方体内部随机采样一点(包含表面)
  */
 inline point_t random_in_cube(float xmin, float xmax) {
-    return {random_float(xmin, xmax), random_float(xmin, xmax), random_float(xmin, xmax)};
+    return {random_float(xmin, xmax), random_float(xmin, xmax),
+            random_float(xmin, xmax)};
 }
 
 /**
@@ -83,9 +85,7 @@ point_t random_in_unit_disk() {
 /**
  * @brief 获取一个随机的单位向量
  */
-unit_vec3 random_unit_vec() {
-    return unit_vec3{random_in_unit_sphere()};
-}
+unit_vec3 random_unit_vec() { return unit_vec3{random_in_unit_sphere()}; }
 
 /**
  * @brief 计算反射光线的方向
@@ -99,14 +99,16 @@ vec3_t reflect(const vec3_t &vec, const unit_vec3 &normal) {
  * @param eta_ratio 入射材料折射率除以折射材料折射率
  * @return 在没有折射发生时返回std::nullopt
  */
-std::optional<unit_vec3> refract(const unit_vec3 &vec, const unit_vec3 &normal, float eta_ratio) {
+std::optional<unit_vec3> refract(const unit_vec3 &vec, const unit_vec3 &normal,
+                                 float eta_ratio) {
     const float cos_theta = std::min(-vec.dot(normal), 1.0f);
     const float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
     if (sin_theta * eta_ratio > 1.0f) {
         return std::nullopt;
     };
     const vec3_t out_perp = eta_ratio * (vec + cos_theta * normal);
-    const vec3_t out_para = -std::sqrt(std::abs(1.0f - out_perp.len_sq())) * normal;
+    const vec3_t out_para =
+        -std::sqrt(std::abs(1.0f - out_perp.len_sq())) * normal;
     return unit_vec3{out_perp + out_para};
 }
 
@@ -114,7 +116,8 @@ std::optional<unit_vec3> refract(const unit_vec3 &vec, const unit_vec3 &normal, 
  * @brief 获取%H-%M-%S表示的时间串字符
  */
 std::string current_time() {
-    std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::time_t t =
+        std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     auto ltime = std::localtime(&t);
     std::stringstream ss;
     ss << std::put_time(ltime, "%H-%M-%S");
@@ -126,12 +129,12 @@ std::string current_time() {
  * @param path 文件路径
  * @param err_leader 错误信息头
  */
-void exist_or_abort(const std::filesystem::path &path, const std::string &err_leader) {
+void exist_or_abort(const std::filesystem::path &path,
+                    const std::string &err_leader) {
     if (!std::filesystem::exists(path)) {
         std::cerr << err_leader << ' ' << path << " does not exist!\n";
         std::abort();
     }
 }
 
-
-#endif //RT_UTILS_HPP
+#endif  // RT_UTILS_HPP

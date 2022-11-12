@@ -5,9 +5,10 @@
 #ifndef RT_AABB_HPP
 #define RT_AABB_HPP
 
+#include <algorithm>
+
 #include "common.hpp"
 #include "ray.hpp"
-#include <algorithm>
 
 /**
  * @brief 轴对齐包围盒
@@ -15,6 +16,7 @@
 class aabb {
     point_t low_;
     point_t high_;
+
 public:
     aabb() {
         const auto nlow = std::numeric_limits<float>::lowest();
@@ -23,9 +25,7 @@ public:
         high_ = {nlow, nlow, nlow};
     }
 
-    aabb(const point_t &low, const point_t &high) : low_(low), high_(high) {
-
-    }
+    aabb(const point_t &low, const point_t &high) : low_(low), high_(high) {}
 
     /**
      * @brief 包围盒与光线在给定参数范围内是否有交
@@ -54,16 +54,12 @@ public:
      */
     [[nodiscard]] aabb union_with(const aabb &other) const {
         const auto low = other.low_, high = other.high_;
-        const point_t res_low{
-                std::min(low_.x(), low.x()),
-                std::min(low_.y(), low.y()),
-                std::min(low_.z(), low.z())
-        };
-        const point_t res_high{
-                std::max(high_.x(), high.x()),
-                std::max(high_.y(), high.y()),
-                std::max(high_.z(), high.z())
-        };
+        const point_t res_low{std::min(low_.x(), low.x()),
+                              std::min(low_.y(), low.y()),
+                              std::min(low_.z(), low.z())};
+        const point_t res_high{std::max(high_.x(), high.x()),
+                               std::max(high_.y(), high.y()),
+                               std::max(high_.z(), high.z())};
         return {res_low, res_high};
     }
 
@@ -79,14 +75,13 @@ public:
         return std::distance(ext, std::max_element(ext, ext + 3));
     }
 
-    [[nodiscard]] point_t centroid() const {
-        return (low_ + high_) / 2.0;
-    }
+    [[nodiscard]] point_t centroid() const { return (low_ + high_) / 2.0; }
 
     [[nodiscard]] float area() const {
         const auto diagonal = high_ - low_;
-        return 2 * (diagonal[0] * (diagonal[1] + diagonal[2]) + diagonal[1] * diagonal[2]);
+        return 2 * (diagonal[0] * (diagonal[1] + diagonal[2]) +
+                    diagonal[1] * diagonal[2]);
     }
 };
 
-#endif //RT_AABB_HPP
+#endif  // RT_AABB_HPP

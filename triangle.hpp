@@ -5,24 +5,29 @@
 #ifndef RT_TRIANGLE_HPP
 #define RT_TRIANGLE_HPP
 
-#include "hittable.hpp"
 #include <iostream>
 #include <limits>
 
+#include "hittable.hpp"
+
 class triangle : public hittable {
     std::array<point_t, 3> vertices_;
-    unit_vec3 normal_;  // 顶点按右手方向旋转得到的法向
+    unit_vec3 normal_;      // 顶点按右手方向旋转得到的法向
     float dist_to_origin_;  // A*x+B*y+C*z+D=0中的D
     std::shared_ptr<material> pmat_;
     using tex_coords_t = std::pair<float, float>;
     std::array<tex_coords_t, 3> tex_coords_;
     std::array<vec3_t, 3> edges_;
     float area2_;
+
 public:
-    triangle(const point_t &p0, const point_t &p1, const point_t &p2, float tex[6], std::shared_ptr<material> pmat)
-            : vertices_{p0, p1, p2}, tex_coords_{tex_coords_t{tex[0], tex[1]},
-                                                 {tex[2], tex[3]},
-                                                 {tex[4], tex[5]}}, pmat_(std::move(pmat)) {
+    triangle(const point_t &p0, const point_t &p1, const point_t &p2,
+             float tex[6], std::shared_ptr<material> pmat)
+        : vertices_{p0, p1, p2},
+          pmat_(std::move(pmat)),
+          tex_coords_{tex_coords_t{tex[0], tex[1]},
+                      {tex[2], tex[3]},
+                      {tex[4], tex[5]}} {
         normal_ = (p1 - p0).cross(p2 - p1).normalized();
         if (normal_.len_sq() == 0) {
             std::cerr << "bad triangle: collinear edges\n";
@@ -36,7 +41,8 @@ private:
     [[nodiscard]] point_t vertex(int i) const { return vertices_[i % 3]; }
 
 public:
-    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin, float tmax) const override {
+    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin,
+                                                float tmax) const override {
         const float divisor = normal_.dot(r.direction());
         if (divisor == 0) {
             return std::nullopt;
@@ -77,8 +83,8 @@ public:
         const auto inf = std::numeric_limits<float>::max();
         float coord_min[3] = {inf, inf, inf};
         float coord_max[3] = {-inf, -inf, -inf};
-        for (auto &&vertex: vertices_) {
-            for (int k = 0; k < 3; k++) {   // x,y,z维度
+        for (auto &&vertex : vertices_) {
+            for (int k = 0; k < 3; k++) {  // x,y,z维度
                 coord_min[k] = std::min(coord_min[k], vertex[k]);
                 coord_max[k] = std::max(coord_max[k], vertex[k]);
             }
@@ -91,4 +97,4 @@ public:
     }
 };
 
-#endif //RT_TRIANGLE_HPP
+#endif  // RT_TRIANGLE_HPP

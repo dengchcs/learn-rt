@@ -15,15 +15,15 @@ class camera {
     vec3_t horizontal_;
     vec3_t vertical_;
     float lens_radius_;
+
 public:
-    camera(
-            point_t eye,        // 相机位置
-            point_t center,     // 视点
-            vec3_t up,          // 相机上方向
-            float vfov,         // 竖直方向视角(角度制)
-            float aspect_ratio, // 水平/竖直视域比例
-            float aperture,     // 孔径
-            float focus_dist    // 焦距
+    camera(point_t eye,         // 相机位置
+           point_t center,      // 视点
+           vec3_t up,           // 相机上方向
+           float vfov,          // 竖直方向视角(角度制)
+           float aspect_ratio,  // 水平/竖直视域比例
+           float aperture,      // 孔径
+           float focus_dist     // 焦距
     ) {
         // "标准"viewport高为2
         vfov = vfov * g_pi / 180.0f;
@@ -35,17 +35,17 @@ public:
         eye_ = eye;
         horizontal_ = vp_width * u;
         vertical_ = vp_height * v;
-        lower_left_ = eye_ - horizontal_ / 2.0 - vertical_ / 2.0 - focus_dist * w;
+        lower_left_ =
+            eye_ - horizontal_ / 2.0 - vertical_ / 2.0 - focus_dist * w;
         lens_radius_ = aperture / 2.0f;
     }
 
     [[nodiscard]] ray get_ray(float u, float v) const {
         const vec3_t rd = lens_radius_ * random_in_unit_disk();
-        const vec3_t offset = rd.x() * horizontal_.normalized() + rd.y() * vertical_.normalized();
-        return {
-                eye_ + offset,
-                lower_left_ + horizontal_ * u + vertical_ * v - eye_ - offset
-        };
+        const vec3_t offset =
+            rd.x() * horizontal_.normalized() + rd.y() * vertical_.normalized();
+        return {eye_ + offset,
+                lower_left_ + horizontal_ * u + vertical_ * v - eye_ - offset};
     }
 
     [[nodiscard]] ray get_ray_no_blur(float u, float v) const {
@@ -53,4 +53,4 @@ public:
     }
 };
 
-#endif //RT_CAMERA_HPP
+#endif  // RT_CAMERA_HPP

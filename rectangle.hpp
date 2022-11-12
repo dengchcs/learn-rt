@@ -6,6 +6,7 @@
 #define RT_RECTANGLE_HPP
 
 #include <iostream>
+
 #include "hittable.hpp"
 
 class rectangle : public hittable {
@@ -14,9 +15,11 @@ class rectangle : public hittable {
     vec3_t edge_v_;
     unit_vec3 normal_;
     std::shared_ptr<material> pmat_;
+
 public:
-    rectangle(const point_t &p, const vec3_t &edgeu, const vec3_t &edgev, std::shared_ptr<material> pmat)
-            : corner_(p), edge_u_(edgeu), edge_v_(edgev), pmat_(std::move(pmat)) {
+    rectangle(const point_t &p, const vec3_t &edgeu, const vec3_t &edgev,
+              std::shared_ptr<material> pmat)
+        : corner_(p), edge_u_(edgeu), edge_v_(edgev), pmat_(std::move(pmat)) {
         normal_ = edgeu.cross(edgev).normalized();
         if (normal_.len_sq() == 0) {
             std::cerr << "bad rectangle: collinear edge\n";
@@ -24,7 +27,8 @@ public:
         edge_v_ = normal_.cross(edge_u_);
     }
 
-    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin, float tmax) const override {
+    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin,
+                                                float tmax) const override {
         const float divisor = normal_.dot(r.direction());
         if (divisor == 0) {
             return std::nullopt;
@@ -56,9 +60,10 @@ public:
         const auto inf = std::numeric_limits<float>::max();
         float coord_min[3] = {inf, inf, inf};
         float coord_max[3] = {-inf, -inf, -inf};
-        point_t vertices[4] = {corner_, corner_ + edge_u_, corner_ + edge_v_, corner_ + edge_u_ + edge_v_};
-        for (auto &&vertex: vertices) {
-            for (int k = 0; k < 3; k++) {   // x,y,z维度
+        point_t vertices[4] = {corner_, corner_ + edge_u_, corner_ + edge_v_,
+                               corner_ + edge_u_ + edge_v_};
+        for (auto &&vertex : vertices) {
+            for (int k = 0; k < 3; k++) {  // x,y,z维度
                 coord_min[k] = std::min(coord_min[k], vertex[k]);
                 coord_max[k] = std::max(coord_max[k], vertex[k]);
             }
@@ -71,4 +76,4 @@ public:
     }
 };
 
-#endif //RT_RECTANGLE_HPP
+#endif  // RT_RECTANGLE_HPP

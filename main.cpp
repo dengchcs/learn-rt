@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 
     my_tracer.trace(world, image_path.string());
     auto end = std::chrono::steady_clock::now();
-    std::cout << "done in " << std::chrono::duration<double>(end - start).count() << "s.\n";
+    std::cout << "done in "
+              << std::chrono::duration<double>(end - start).count() << "s.\n";
     return 0;
 }
