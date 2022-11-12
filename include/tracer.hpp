@@ -1,7 +1,3 @@
-//
-// Created by CD on 2022/10/30.
-//
-
 #ifndef RT_TRACER_HPP
 #define RT_TRACER_HPP
 
@@ -9,17 +5,13 @@
 #include <iostream>
 #include <numeric>
 
+#include "stb_image_write.h"
 #include "bvh.hpp"
 #include "camera.hpp"
 #include "common.hpp"
 #include "hittable.hpp"
 #include "material.hpp"
 
-#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#endif
-
-#include "deps/stb_image_write.h"
 
 class tracer {
 public:
@@ -42,8 +34,7 @@ private:
 
 private:
     template <typename T>
-    [[nodiscard]] color_t cast_ray(const ray &r, const T &target,
-                                   int depth) const {
+    [[nodiscard]] color_t cast_ray(const ray &r, const T &target, int depth) const {
         if (depth <= 0) {
             return {0, 0, 0};
         }
@@ -60,10 +51,8 @@ private:
         }
         ray scattered;
         color_t attenuation;
-        const color_t emitted =
-            record->pmat->emit(record->u, record->v, record->point);
-        const bool scatter =
-            record->pmat->scatter(r, record.value(), attenuation, scattered);
+        const color_t emitted = record->pmat->emit(record->u, record->v, record->point);
+        const bool scatter = record->pmat->scatter(r, record.value(), attenuation, scattered);
         if (!scatter) {
             return emitted;
         }
@@ -76,8 +65,7 @@ private:
     void write_color(int row, int col, const color_t &pixel) {
         auto r = pixel.x(), g = pixel.y(), b = pixel.z();
         const float scale = 1.0f / (float)config_.samples_per_pixel;
-        r = std::sqrt(
-            r * scale);  // Gamma Correction (gamma = 0.5), gamma越小图片越亮
+        r = std::sqrt(r * scale);  // Gamma Correction (gamma = 0.5), gamma越小图片越亮
         g = std::sqrt(g * scale);
         b = std::sqrt(b * scale);
 
@@ -98,10 +86,8 @@ private:
             for (int i = 0; i < config_.width; i++) {
                 color_t color{0, 0, 0};
                 for (int s = 0; s < config_.samples_per_pixel; s++) {
-                    const float u =
-                        ((float)i + random_float()) / (float)config_.width;
-                    const float v =
-                        ((float)j + random_float()) / (float)config_.height;
+                    const float u = ((float)i + random_float()) / (float)config_.width;
+                    const float v = ((float)j + random_float()) / (float)config_.height;
                     ray r = cam_.get_ray(u, v);
                     color += cast_ray(r, target, config_.max_depth);
                 }
@@ -109,12 +95,10 @@ private:
                 write_color(row, col, color);
             }
         }
-        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_,
-                       config_.width * 3);
+        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
         auto end = std::chrono::steady_clock::now();
         std::cout << "scene rendering: done in "
-                  << std::chrono::duration<double>(end - start).count()
-                  << "s.\n\n";
+                  << std::chrono::duration<double>(end - start).count() << "s.\n\n";
     }
 
     template <typename T>
@@ -127,28 +111,23 @@ private:
 
         std::vector<int> range(config_.width * config_.height);
         std::iota(range.begin(), range.end(), 0);
-        std::for_each(
-            std::execution::par, range.begin(), range.end(), [&](int index) {
-                const int row = index / config_.width;
-                const int col = index % config_.width;
-                color_t color{0, 0, 0};
-                for (int s = 0; s < config_.samples_per_pixel; s++) {
-                    const float u =
-                        ((float)col + random_float()) / (float)config_.width;
-                    const float v =
-                        ((float)(config_.height - 1 - row) + random_float()) /
-                        (float)config_.height;
-                    ray r = cam_.get_ray(u, v);
-                    color += cast_ray(r, target, config_.max_depth);
-                }
-                write_color(row, col, color);
-            });
-        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_,
-                       config_.width * 3);
+        std::for_each(std::execution::par, range.begin(), range.end(), [&](int index) {
+            const int row = index / config_.width;
+            const int col = index % config_.width;
+            color_t color{0, 0, 0};
+            for (int s = 0; s < config_.samples_per_pixel; s++) {
+                const float u = ((float)col + random_float()) / (float)config_.width;
+                const float v =
+                    ((float)(config_.height - 1 - row) + random_float()) / (float)config_.height;
+                ray r = cam_.get_ray(u, v);
+                color += cast_ray(r, target, config_.max_depth);
+            }
+            write_color(row, col, color);
+        });
+        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
         auto end = std::chrono::steady_clock::now();
         std::cout << "scene rendering: done in "
-                  << std::chrono::duration<double>(end - start).count()
-                  << "s.\n\n";
+                  << std::chrono::duration<double>(end - start).count() << "s.\n\n";
     }
 
 public:
@@ -160,8 +139,7 @@ public:
             bvh bvh{world_cp, 0, (int)world_cp.size()};
             auto end = std::chrono::steady_clock::now();
             std::cout << "BVH building: done in "
-                      << std::chrono::duration<double>(end - start).count()
-                      << "s.\n\n";
+                      << std::chrono::duration<double>(end - start).count() << "s.\n\n";
             if (config_.parallel) {
                 trace_parallel(bvh, path);
             } else {

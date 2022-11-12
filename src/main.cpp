@@ -1,5 +1,10 @@
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+
 #include "parser.hpp"
+#include "tracer.hpp"
 #include "utils.hpp"
+
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
@@ -18,7 +23,6 @@ int main(int argc, char *argv[]) {
 
     my_tracer.trace(world, image_path.string());
     auto end = std::chrono::steady_clock::now();
-    std::cout << "done in "
-              << std::chrono::duration<double>(end - start).count() << "s.\n";
+    std::cout << "done in " << std::chrono::duration<double>(end - start).count() << "s.\n";
     return 0;
 }

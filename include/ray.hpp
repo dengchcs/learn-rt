@@ -1,11 +1,7 @@
-//
-// Created by CD on 2022/10/25.
-//
-
-#include "common.hpp"
-
 #ifndef RT_RAY_H
 #define RT_RAY_H
+
+#include "common.hpp"
 
 class ray {
 private:
@@ -19,12 +15,9 @@ public:
 
 public:
     ray() = default;
-    ray(const point_t &origin, const vec3_t &direction)
-        : origin_(origin), direction_(direction) {}
+    ray(const point_t &origin, const vec3_t &direction) : origin_(origin), direction_(direction) {}
 
-    [[nodiscard]] point_t point_at(float t) const {
-        return origin_ + t * direction_;
-    }
+    [[nodiscard]] point_t point_at(float t) const { return origin_ + t * direction_; }
 };
 
 #endif  // RT_RAY_H

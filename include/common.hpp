@@ -1,7 +1,3 @@
-//
-// Created by CD on 2022/10/25.
-//
-
 #ifndef RT_COMMON_HPP
 #define RT_COMMON_HPP
 

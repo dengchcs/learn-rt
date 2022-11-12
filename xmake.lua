@@ -2,8 +2,9 @@ add_rules("mode.debug", "mode.release")
 target("rt")
     set_languages("c++17")
     set_kind("binary")
-    add_headerfiles("*.hpp", "deps/*.hpp", "deps/*.h")
-    add_files("main.cpp")
+    add_includedirs("include")
+    add_includedirs("deps")
+    add_files("src/*.cpp")
     set_warnings("all")
     
     if is_plat("linux") then

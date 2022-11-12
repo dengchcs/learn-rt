@@ -1,7 +1,3 @@
-//
-// Created by CD on 2022/10/28.
-//
-
 #ifndef RT_CAMERA_HPP
 #define RT_CAMERA_HPP
 

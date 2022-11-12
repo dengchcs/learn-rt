@@ -1,7 +1,3 @@
-//
-// Created by CD on 2022/10/26.
-//
-
 #ifndef RT_MATERIAL_HPP
 #define RT_MATERIAL_HPP
 
