@@ -1,18 +1,80 @@
 #include "parser.hpp"
 
+#include <array>
+
 #include "happly.h"
 #include "rectangle.hpp"
 #include "sphere.hpp"
 #include "tracer.hpp"
 #include "triangle.hpp"
 
-world_t parser::make_scene() const {
-    std::cout << "scene reading: started...\n";
-    const auto config = toml::parse_file(scene_path_.string());
+std::vector<float> parser::parse_vec(const toml::array &arr, int start, int cnt) {
+    std::vector<float> vec(cnt);
+    for (int i = start; i < start + cnt; i++) {
+        vec[i - start] = arr[i].value<float>().value();
+    }
+    return vec;
+}
 
+void parser::transform_mesh(std::vector<std::array<double, 3>> &vertices, transf &trans) {
+    using vert_t = std::array<double, 3>;
+
+    auto rotate = [](const vert_t &vert, const vec3_t &rot) {
+        const auto cosx = cos(rot[0]);
+        const auto cosy = cos(rot[1]);
+        const auto cosz = cos(rot[2]);
+        const auto sinx = sin(rot[0]);
+        const auto siny = sin(rot[1]);
+        const auto sinz = sin(rot[2]);
+        auto res = vert;
+        std::array<vert_t, 3> rot_mat = {
+            vert_t{cosy * cosz, sinx * siny * cosz - cosx * sinz, cosx * siny * cosz + sinx * sinz},
+            {cosx * sinz, sinx * siny * sinz + cosx * cosz, cosx * siny * sinz - sinx * cosz},
+            {-siny, sinx * cosy, cosx * cosy}};
+        for (int i = 0; i < 3; i++) {
+            res[i] = std::inner_product(vert.begin(), vert.end(), rot_mat.at(i).begin(), 0.0);
+        }
+        return res;
+    };
+
+    const auto num_vert = (int)vertices.size();
+    auto point_add = [](const vert_t &vert1, const vert_t &vert2) {
+        return vert_t{vert1[0] + vert2[0], vert1[1] + vert2[1], vert1[2] + vert2[2]};
+    };
+    auto center = std::reduce(std::execution::par, vertices.begin(), vertices.end(),
+                              vert_t{0.0, 0.0, 0.0}, point_add);
+    center[0] /= num_vert, center[1] /= num_vert, center[2] /= num_vert;
+    auto distance = [](const vert_t &vert1, const vert_t &vert2) {
+        const auto diff0 = vert1[0] - vert2[0];
+        const auto diff1 = vert1[1] - vert2[1];
+        const auto diff2 = vert1[2] - vert2[2];
+        return std::sqrt(diff0 * diff0 + diff1 * diff1 + diff2 * diff2);
+    };
+    const auto farmost =
+        std::max_element(std::execution::par, vertices.begin(), vertices.end(),
+                         [&](const vert_t &vert1, const vert_t vert2) {
+                             return distance(vert1, center) < distance(vert2, center);
+                         });
+    const auto dist = distance(*farmost, center);
+    trans.scale /= dist;
+    std::for_each(std::execution::par, vertices.begin(), vertices.end(), [&](auto &&vert) {
+        vert[0] = (vert[0] - center[0]) * trans.scale;
+        vert[1] = (vert[1] - center[1]) * trans.scale;
+        vert[2] = (vert[2] - center[2]) * trans.scale;
+        vert = rotate(vert, trans.rotate);
+        vert[0] += trans.translate[0];
+        vert[1] += trans.translate[1];
+        vert[2] += trans.translate[2];
+    });
+}
+
+auto parser::read_textures() const -> tex_tbl_t {
+    const auto config = toml::parse_file(scene_path_.string());
     std::cout << "\treading textures...\n";
+
     const auto &textures = *config.get_as<toml::array>("textures");
     tex_tbl_t tex_tbl;
+    tex_tbl.reserve(textures.size());
     for (auto &&tex : textures) {
         const auto &tex_info = *tex.as_array();
         const auto tex_name = tex_info[0].value<std::string>().value();
@@ -27,13 +89,19 @@ world_t parser::make_scene() const {
             const auto rgb = parse_vec(tex_info, 2, 3);
             tex_tbl.emplace(tex_name, std::make_shared<solid_color>(rgb[0], rgb[1], rgb[2]));
         } else {
-            std::cerr << "unknown texture: " << tex_type << "\n";
+            std::cerr << "unknown texture: " << tex_type << '\n';
         }
     }
+    return tex_tbl;
+}
 
+auto parser::read_materials(const tex_tbl_t &tex_tbl) const -> mat_tbl_t {
+    const auto config = toml::parse_file(scene_path_.string());
     std::cout << "\treading materials...\n";
+
     const auto &materials = *config.get_as<toml::array>("materials");
     mat_tbl_t mat_tbl;
+    mat_tbl.reserve(materials.size());
     for (auto &&mat : materials) {
         const auto mat_info = *mat.as_array();
         const auto mat_name = mat_info[0].value<std::string>().value();
@@ -76,91 +144,105 @@ world_t parser::make_scene() const {
             std::cerr << "unknown material: " << mat_type << "\n";
         }
     }
+    return mat_tbl;
+}
+
+void parser::read_objects(const char *name,
+                          const std::function<void(const toml::array &info)> &single_parser) const {
+    const auto config = toml::parse_file(scene_path_.string());
+    if (!config.contains(name)) {
+        return;
+    }
+    const auto &objects = *config.get_as<toml::array>(name);
+    for (auto &&object : objects) {
+        const auto info = *object.as_array();
+        single_parser(info);
+    }
+}
+
+world_t parser::make_scene() const {
+    std::cout << "scene reading: started...\n";
+
+    std::cout << "\treading textures...\n";
+    const auto tex_tbl = read_textures();
+
+    std::cout << "\treading materials...\n";
+    const auto mat_tbl = read_materials(tex_tbl);
 
     world_t world;
+
     std::cout << "\treading spheres...\n";
-    if (config.contains("spheres")) {
-        const auto &spheres = *config.get_as<toml::array>("spheres");
-        for (auto &&sph : spheres) {
-            const auto &sph_info = *sph.as_array();
-            const auto xyzr = parse_vec(sph_info, 0, 4);
-            const auto mat_name = sph_info[4].value<std::string>().value();
-            const auto sph_mat = mat_tbl.at(mat_name);
-            world.push_back(
-                std::make_shared<sphere>(vec3_t{xyzr[0], xyzr[1], xyzr[2]}, xyzr[3], sph_mat));
-        }
-    }
-    std::cout << "\treading triangles...\n";
-    if (config.contains("triangles")) {
-        const auto &triangles = *config.get_as<toml::array>("triangles");
-        for (auto &&tri : triangles) {
-            const auto &tri_info = *tri.as_array();
-            point_t vertices[3];
-            float tex_coords[6];
-            for (int i = 0; i < 3; i++) {
-                const auto vert = parse_vec(*tri_info[i].as_array(), 0, 5);
-                vertices[i] = {vert[0], vert[1], vert[2]};
-                tex_coords[i * 2] = vert[3], tex_coords[i * 2 + 1] = vert[4];
-            }
-            const auto mat_name = tri_info[3].value<std::string>().value();
-            const auto tri_mat = mat_tbl.at(mat_name);
-            world.push_back(std::make_shared<triangle>(vertices[0], vertices[1], vertices[2],
-                                                       tex_coords, tri_mat));
-        }
-    }
-    std::cout << "\treading meshes...\n";
-    if (config.contains("meshes")) {
-        const auto &meshes = *config.get_as<toml::array>("meshes");
-        float tex[6] = {0, 0, 0, 0, 0, 0};
-        for (auto &&mesh : meshes) {
-            const auto mesh_info = *mesh.as_array();
-            auto mesh_name = mesh_info[0].value<std::string>().value();
-            auto mesh_path = scene_path_.parent_path();
-            mesh_path /= mesh_name;
-            exist_or_abort(mesh_path, "mesh file");
-            const auto mat_name = mesh_info[1].value<std::string>().value();
-            const auto mesh_mat = mat_tbl.at(mat_name);
+    read_objects("spheres", [&](const toml::array &info) {
+        const auto xyzr = parse_vec(info, 0, 4);
+        const auto mat_name = info[4].value<std::string>().value();
+        const auto &sph_mat = mat_tbl.at(mat_name);
+        world.push_back(
+            std::make_shared<sphere>(vec3_t{xyzr[0], xyzr[1], xyzr[2]}, xyzr[3], sph_mat));
+    });
 
-            const auto translate = parse_vec(*mesh_info[2].as_array(), 0, 3);
-            const auto scale = mesh_info[3].value<double>().value();
-            const auto rotate = parse_vec(*mesh_info[4].as_array(), 0, 3);
-            transf transform{(float)scale, vec3_t{translate.data()}, vec3_t{rotate.data()}};
-            for (int i = 0; i < 3; i++) {
-                transform.rotate[i] *= (g_pi / 180);
-            }
-
-            happly::PLYData mesh_data(mesh_path.string());
-            auto vertices = mesh_data.getVertexPositions();
-            transform_mesh(vertices, transform);
-
-            const auto indices = mesh_data.getFaceIndices();
-            for (auto &&index : indices) {
-                const auto v0 = vertices[index[0]], v1 = vertices[index[1]],
-                           v2 = vertices[index[2]];
-                const auto p0 = point_t(v0[0], v0[1], v0[2]);
-                const auto p1 = point_t(v1[0], v1[1], v1[2]);
-                const auto p2 = point_t(v2[0], v2[1], v2[2]);
-                world.push_back(std::make_shared<triangle>(p0, p1, p2, tex, mesh_mat));
-            }
-        }
-    }
     std::cout << "\treading rectangles...\n";
-    if (config.contains("rectangles")) {
-        const auto &rectangles = *config.get_as<toml::array>("rectangles");
-        for (auto &&rect : rectangles) {
-            const auto rect_info = *rect.as_array();
-            point_t points[3];
-            for (int i = 0; i < 3; i++) {
-                const auto vert = parse_vec(*rect_info[i].as_array(), 0, 3);
-                points[i] = point_t{vert.data()};
-            }
-            const auto mat_name = rect_info[3].value<std::string>().value();
-            const auto rect_mat = mat_tbl.at(mat_name);
-            world.push_back(std::make_shared<rectangle>(points[0], points[1], points[2], rect_mat));
+    read_objects("rectangles", [&](const toml::array &rect_info) {
+        std::array<point_t, 3> points;
+        for (int i = 0; i < 3; i++) {
+            const auto vert = parse_vec(*rect_info[i].as_array(), 0, 3);
+            points.at(i) = point_t{vert.data()};
         }
-    }
+        const auto mat_name = rect_info[3].value<std::string>().value();
+        const auto &rect_mat = mat_tbl.at(mat_name);
+        world.push_back(std::make_shared<rectangle>(points[0], points[1], points[2], rect_mat));
+    });
+
+    std::cout << "\treading triangles...\n";
+    read_objects("triangles", [&](const toml::array &tri_info) {
+        std::array<point_t, 3> vertices;
+        std::array<float, 6> tex_coords{};
+        for (std::size_t i = 0; i < 3; i++) {
+            const auto vert = parse_vec(*tri_info[i].as_array(), 0, 5);
+            vertices.at(i) = {vert[0], vert[1], vert[2]};
+            tex_coords.at(i * 2) = vert[3], tex_coords.at(i * 2 + 1) = vert[4];
+        }
+        const auto mat_name = tri_info[3].value<std::string>().value();
+        const auto &tri_mat = mat_tbl.at(mat_name);
+        world.push_back(std::make_shared<triangle>(vertices[0], vertices[1], vertices[2],
+                                                   tex_coords.data(), tri_mat));
+    });
+
+    std::cout << "\treading meshes...\n";
+    read_objects("meshes", [&](const toml::array &mesh_info) {
+        auto mesh_name = mesh_info[0].value<std::string>().value();
+        auto mesh_path = scene_path_.parent_path();
+        mesh_path /= mesh_name;
+        exist_or_abort(mesh_path, "mesh file");
+        const auto mat_name = mesh_info[1].value<std::string>().value();
+        const auto &mesh_mat = mat_tbl.at(mat_name);
+
+        const auto translate = parse_vec(*mesh_info[2].as_array(), 0, 3);
+        const auto scale = mesh_info[3].value<double>().value();
+        const auto rotate = parse_vec(*mesh_info[4].as_array(), 0, 3);
+        transf transform{(float)scale, vec3_t{translate.data()}, vec3_t{rotate.data()}};
+        for (int i = 0; i < 3; i++) {
+            transform.rotate[i] *= (g_pi / 180);
+        }
+
+        happly::PLYData mesh_data(mesh_path.string());
+        auto vertices = mesh_data.getVertexPositions();
+        transform_mesh(vertices, transform);
+
+        float tex[6] = {0, 0, 0, 0, 0, 0};
+        const auto indices = mesh_data.getFaceIndices();
+        for (auto &&index : indices) {
+            const auto vert0 = vertices[index[0]];
+            const auto vert1 = vertices[index[1]];
+            const auto vert2 = vertices[index[2]];
+            const auto point0 = point_t(vert0[0], vert0[1], vert0[2]);
+            const auto point1 = point_t(vert1[0], vert1[1], vert1[2]);
+            const auto point2 = point_t(vert2[0], vert2[1], vert2[2]);
+            world.push_back(std::make_shared<triangle>(point0, point1, point2, tex, mesh_mat));
+        }
+    });
 
     std::cout << "scene reading: done.\n\n";
+
     return world;
 }
 
@@ -193,57 +275,4 @@ tracer parser::make_tracer() const {
 
     std::cout << "tracer configuring: done.\n\n";
     return {tconfig, cam};
-}
-
-std::vector<float> parser::parse_vec(const toml::array &arr, int start, int cnt) {
-    std::vector<float> vec(cnt);
-    for (int i = start; i < start + cnt; i++) {
-        vec[i - start] = arr[i].value<float>().value();
-    }
-    return vec;
-}
-
-void parser::transform_mesh(std::vector<std::array<double, 3>> &vertices, transf &trans) {
-    using vert_t = std::array<double, 3>;
-
-    auto rotate = [](const vert_t &vert, const vec3_t &rot) {
-        const auto cx = cos(rot[0]), cy = cos(rot[1]), cz = cos(rot[2]);
-        const auto sx = sin(rot[0]), sy = sin(rot[1]), sz = sin(rot[2]);
-        auto res = vert;
-        std::array<vert_t, 3> rot_mat = {
-            vert_t{cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz},
-            {cx * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz},
-            {-sy, sx * cy, cx * cy}};
-        for (int i = 0; i < 3; i++) {
-            res[i] = std::inner_product(vert.begin(), vert.end(), rot_mat[i].begin(), 0.0);
-        }
-        return res;
-    };
-
-    const auto num_vert = vertices.size();
-    auto point_add = [](const vert_t &vert1, const vert_t &vert2) {
-        return vert_t{vert1[0] + vert2[0], vert1[1] + vert2[1], vert1[2] + vert2[2]};
-    };
-    auto center = std::reduce(std::execution::par, vertices.begin(), vertices.end(),
-                              vert_t{0.0, 0.0, 0.0}, point_add);
-    center[0] /= num_vert, center[1] /= num_vert, center[2] /= num_vert;
-    auto distance = [](const vert_t &v1, const vert_t &v2) {
-        const auto d0 = v1[0] - v2[0], d1 = v1[1] - v2[1], d2 = v1[2] - v2[2];
-        return std::sqrt(d0 * d0 + d1 * d1 + d2 * d2);
-    };
-    const auto farmost = std::max_element(std::execution::par, vertices.begin(), vertices.end(),
-                                          [&](const vert_t &v1, const vert_t v2) {
-                                              return distance(v1, center) < distance(v2, center);
-                                          });
-    const auto dist = distance(*farmost, center);
-    trans.scale /= dist;
-    std::for_each(std::execution::par, vertices.begin(), vertices.end(), [&](auto &&vert) {
-        vert[0] = (vert[0] - center[0]) * trans.scale;
-        vert[1] = (vert[1] - center[1]) * trans.scale;
-        vert[2] = (vert[2] - center[2]) * trans.scale;
-        vert = rotate(vert, trans.rotate);
-        vert[0] += trans.translate[0];
-        vert[1] += trans.translate[1];
-        vert[2] += trans.translate[2];
-    });
 }

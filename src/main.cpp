@@ -5,7 +5,6 @@
 #include "tracer.hpp"
 #include "utils.hpp"
 
-
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         std::cerr << "usage: rt <scene-file> <image-dir>\n";
@@ -13,9 +12,9 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "program started...\n\n";
     auto start = std::chrono::steady_clock::now();
-    parser p{argv[1]};
-    auto world = p.make_scene();
-    auto my_tracer = p.make_tracer();
+    parser my_parser{argv[1]};
+    auto world = my_parser.make_scene();
+    auto my_tracer = my_parser.make_tracer();
 
     std::filesystem::path image_path(argv[2]);
     exist_or_abort(image_path, "image directory");
