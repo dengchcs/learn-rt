@@ -64,20 +64,20 @@ class parser {
         auto point_add = [](const vert_t &vert1, const vert_t &vert2) {
             return vert_t{vert1[0] + vert2[0], vert1[1] + vert2[1], vert1[2] + vert2[2]};
         };
-        auto center = std::reduce(std::execution::par_unseq, vertices.begin(), vertices.end(), vert_t{0.0, 0.0, 0.0},
+        auto center = std::reduce(std::execution::par, vertices.begin(), vertices.end(), vert_t{0.0, 0.0, 0.0},
                                   point_add);
         center[0] /= num_vert, center[1] /= num_vert, center[2] /= num_vert;
         auto distance = [](const vert_t &v1, const vert_t &v2) {
             const auto d0 = v1[0] - v2[0], d1 = v1[1] - v2[1], d2 = v1[2] - v2[2];
             return std::sqrt(d0 * d0 + d1 * d1 + d2 * d2);
         };
-        const auto farmost = std::max_element(std::execution::par_unseq,
+        const auto farmost = std::max_element(std::execution::par,
                                               vertices.begin(), vertices.end(), [&](const vert_t &v1, const vert_t v2) {
                     return distance(v1, center) < distance(v2, center);
                 });
         const auto dist = distance(*farmost, center);
         trans.scale /= dist;
-        std::for_each(std::execution::par_unseq, vertices.begin(), vertices.end(), [&](auto &&vert) {
+        std::for_each(std::execution::par, vertices.begin(), vertices.end(), [&](auto &&vert) {
             vert[0] = (vert[0] - center[0]) * trans.scale;
             vert[1] = (vert[1] - center[1]) * trans.scale;
             vert[2] = (vert[2] - center[2]) * trans.scale;

@@ -12,6 +12,7 @@
 #include "material.hpp"
 #include <execution>
 #include <iostream>
+#include <numeric>
 
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -117,7 +118,7 @@ private:
         data_ = new unsigned char[config_.width * config_.height * 3];
 
         std::vector<int> range(config_.width * config_.height);
-        std::generate(std::execution::par, range.begin(), range.end(), [n = 0]() mutable { return n++; });
+        std::iota(range.begin(), range.end(), 0);
         std::for_each(
                 std::execution::par,
                 range.begin(), range.end(),
