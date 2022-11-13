@@ -1,14 +1,14 @@
 #include "sphere.hpp"
 
-void sphere::uv_at(const point_t &point, float &u, float &v) const {
+tex_coords_t sphere::uv_at(const point_t &point) const {
     const auto p_unit = (point - center_) / radius_;
     const float theta = std::acos(-p_unit.y());
     const float phi = std::atan2(-p_unit.z(), p_unit.x()) + g_pi;
-    u = phi / (2.0f * g_pi);
-    v = theta / g_pi;
+
+    return {phi / (2.0F * g_pi), theta / g_pi};
 }
 
-std::optional<hit_record> sphere::hit(const ray &r, float tmin, float tmax) const {
+hit_res_t sphere::hit(const ray &r, float tmin, float tmax) const {
     const vec3_t oc = r.origin() - center_;
     const float b_half = oc.dot(r.direction());
     const float c = oc.len_sq() - radius_ * radius_;
@@ -34,7 +34,7 @@ std::optional<hit_record> sphere::hit(const ray &r, float tmin, float tmax) cons
     if (record.outside == (radius_ < 0)) {
         record.normal = -record.normal;
     }
-    uv_at(record.point, record.u, record.v);
+    record.tex_coords = uv_at(record.point);
     record.pmat = pmat_;
     return record;
 }

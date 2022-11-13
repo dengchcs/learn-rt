@@ -30,13 +30,13 @@ public:
 
     [[nodiscard]] float len() const { return std::sqrt(len_sq()); }
 
-    [[nodiscard]] float len_sq() const {
-        return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
-    }
+    [[nodiscard]] float len_sq() const { return e[0] * e[0] + e[1] * e[1] + e[2] * e[2]; }
 
     void normalize() {
         const auto l = len();
-        if (l == 0) return;
+        if (l == 0) {
+            return;
+        }
         for (float &i : e) {
             i /= l;
         }
@@ -49,8 +49,7 @@ public:
     }
 
     [[nodiscard]] vector3 cross(const vector3 &other) const {
-        return {e[1] * other.e[2] - e[2] * other.e[1],
-                e[2] * other.e[0] - e[0] * other.e[2],
+        return {e[1] * other.e[2] - e[2] * other.e[1], e[2] * other.e[0] - e[0] * other.e[2],
                 e[0] * other.e[1] - e[1] * other.e[0]};
     }
 
@@ -108,9 +107,7 @@ public:
         return {v1.e[0] / divisor, v1.e[1] / divisor, v1.e[2] / divisor};
     }
 
-    inline friend vector3 operator-(const vector3 &v1) {
-        return {-v1.e[0], -v1.e[1], -v1.e[2]};
-    }
+    inline friend vector3 operator-(const vector3 &v1) { return {-v1.e[0], -v1.e[1], -v1.e[2]}; }
 
     inline friend bool operator==(const vector3 &v1, const vector3 &v2) {
         return v1.e[0] == v2.e[0] && v1.e[1] == v2.e[1] && v1.e[2] == v2.e[2];
@@ -125,13 +122,11 @@ class unit_vec3 : public vector3 {
     unit_vec3(float x, float y, float z) : vector3(x, y, z) {}
 
 public:
-    unit_vec3() : vector3() {}
+    unit_vec3() = default;
 
     explicit unit_vec3(const vector3 &vec) : vector3(vec) { this->normalize(); }
 
-    inline friend unit_vec3 operator-(const unit_vec3 &v) {
-        return {-v[0], -v[1], -v[2]};
-    }
+    inline friend unit_vec3 operator-(const unit_vec3 &v) { return {-v[0], -v[1], -v[2]}; }
 };
 
 inline unit_vec3 vector3::normalized() const { return unit_vec3{*this}; }
@@ -140,7 +135,10 @@ using color_t = vector3;
 using vec3_t = vector3;
 using point_t = vector3;
 
+using tex_coords_t = std::array<float, 2>;
+
 constexpr auto g_infinity = std::numeric_limits<float>::max();
-constexpr float g_pi = 3.141592653589793238462643383279502884;
+constexpr float g_pi = 3.141592653589793238462643383279502884F;
+constexpr float g_pi_in_degree = 180.0F;
 
 #endif  // RT_COMMON_HPP

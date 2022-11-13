@@ -14,11 +14,11 @@ bvh::bvh(world_t &world, int start, int end) {
         using phit = std::shared_ptr<hittable>;
         auto sort_world = [&](int dim) {
             if (dim < 0 || dim > 2) {
-                std::cerr << "bad dimension: dim = " << dim
-                          << ", start & end: " << start << " " << end << "\n";
+                std::cerr << "bad dimension: dim = " << dim << ", start & end: " << start << " "
+                          << end << "\n";
             }
-            std::sort(std::execution::par, world.begin() + start,
-                      world.begin() + end, [&](const phit &h1, const phit &h2) {
+            std::sort(std::execution::par, world.begin() + start, world.begin() + end,
+                      [&](const phit &h1, const phit &h2) {
                           return h1->bounding_box().centroid()[dim] <
                                  h2->bounding_box().centroid()[dim];
                       });
@@ -32,8 +32,9 @@ bvh::bvh(world_t &world, int start, int end) {
                 const int mid = start + span * i / (n_split + 1);
                 const auto bound_l = ::bounding_box(world, start, mid);
                 const auto bound_r = ::bounding_box(world, mid, end);
-                const double SA = bound_l.area(), SB = bound_r.area();
-                const auto cost = (mid - start) * SA + (end - mid) * SB;
+                const double area_l = bound_l.area();
+                const double area_r = bound_r.area();
+                const auto cost = (mid - start) * area_l + (end - mid) * area_r;
                 if (cost < min_cost) {
                     min_cost = cost;
                     min_idx = mid;
@@ -49,7 +50,7 @@ bvh::bvh(world_t &world, int start, int end) {
     }
 }
 
-std::optional<hit_record> bvh::hit(const ray &r, float tmin, float tmax) const {
+hit_res_t bvh::hit(const ray &r, float tmin, float tmax) const {
     if (!bounding_.hit(r, tmin, tmax)) {
         return std::nullopt;
     }
@@ -60,7 +61,6 @@ std::optional<hit_record> bvh::hit(const ray &r, float tmin, float tmax) const {
     if (rec_l.has_value()) {
         auto rec_r = right_->hit(r, tmin, rec_l->ray_param);
         return rec_r.has_value() ? rec_r : rec_l;
-    } else {
-        return right_->hit(r, tmin, tmax);
     }
+    return right_->hit(r, tmin, tmax);
 }

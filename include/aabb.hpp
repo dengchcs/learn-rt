@@ -2,6 +2,7 @@
 #define RT_AABB_HPP
 
 #include <algorithm>
+#include <array>
 
 #include "common.hpp"
 #include "ray.hpp"
@@ -30,10 +31,10 @@ public:
         const auto direction = r.direction();
         const auto origin = r.origin();
         for (int i = 0; i < 3; i++) {
-            const float invd = 1.0f / direction[i];
+            const float invd = 1.0F / direction[i];
             float t0 = (low_[i] - origin[i]) * invd;
             float t1 = (high_[i] - origin[i]) * invd;
-            if (invd < 0.0f) {
+            if (invd < 0.0F) {
                 std::swap(t0, t1);
             }
             tmin = std::max(tmin, t0);
@@ -49,12 +50,11 @@ public:
      * @brief 计算此包围盒与另一包围盒的包围盒
      */
     [[nodiscard]] aabb union_with(const aabb &other) const {
-        const auto low = other.low_, high = other.high_;
-        const point_t res_low{std::min(low_.x(), low.x()),
-                              std::min(low_.y(), low.y()),
+        const auto low = other.low_;
+        const auto high = other.high_;
+        const point_t res_low{std::min(low_.x(), low.x()), std::min(low_.y(), low.y()),
                               std::min(low_.z(), low.z())};
-        const point_t res_high{std::max(high_.x(), high.x()),
-                               std::max(high_.y(), high.y()),
+        const point_t res_high{std::max(high_.x(), high.x()), std::max(high_.y(), high.y()),
                                std::max(high_.z(), high.z())};
         return {res_low, res_high};
     }
@@ -64,19 +64,18 @@ public:
     [[nodiscard]] point_t high() const { return high_; }
 
     [[nodiscard]] int max_extent_dim() const {
-        float ext[3];
+        std::array<float, 3> ext{};
         for (int i = 0; i < 3; i++) {
-            ext[i] = std::abs(low_[i] - high_[i]);
+            ext.at(i) = std::abs(low_[i] - high_[i]);
         }
-        return std::distance(ext, std::max_element(ext, ext + 3));
+        return (int)std::distance(ext.begin(), std::max_element(ext.begin(), ext.end()));
     }
 
     [[nodiscard]] point_t centroid() const { return (low_ + high_) / 2.0; }
 
     [[nodiscard]] float area() const {
         const auto diagonal = high_ - low_;
-        return 2 * (diagonal[0] * (diagonal[1] + diagonal[2]) +
-                    diagonal[1] * diagonal[2]);
+        return 2 * (diagonal[0] * (diagonal[1] + diagonal[2]) + diagonal[1] * diagonal[2]);
     }
 };
 

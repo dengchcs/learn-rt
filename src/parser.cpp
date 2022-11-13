@@ -195,16 +195,16 @@ world_t parser::make_scene() const {
     std::cout << "\treading triangles...\n";
     read_objects("triangles", [&](const toml::array &tri_info) {
         std::array<point_t, 3> vertices;
-        std::array<float, 6> tex_coords{};
+        std::array<tex_coords_t, 3> tex_coords{};
         for (std::size_t i = 0; i < 3; i++) {
             const auto vert = parse_vec(*tri_info[i].as_array(), 0, 5);
             vertices.at(i) = {vert[0], vert[1], vert[2]};
-            tex_coords.at(i * 2) = vert[3], tex_coords.at(i * 2 + 1) = vert[4];
+            tex_coords.at(i).at(0) = vert[3], tex_coords.at(i).at(1) = vert[4];
         }
         const auto mat_name = tri_info[3].value<std::string>().value();
         const auto &tri_mat = mat_tbl.at(mat_name);
-        world.push_back(std::make_shared<triangle>(vertices[0], vertices[1], vertices[2],
-                                                   tex_coords.data(), tri_mat));
+        world.push_back(
+            std::make_shared<triangle>(vertices[0], vertices[1], vertices[2], tex_coords, tri_mat));
     });
 
     std::cout << "\treading meshes...\n";
@@ -221,22 +221,22 @@ world_t parser::make_scene() const {
         const auto rotate = parse_vec(*mesh_info[4].as_array(), 0, 3);
         transf transform{(float)scale, vec3_t{translate.data()}, vec3_t{rotate.data()}};
         for (int i = 0; i < 3; i++) {
-            transform.rotate[i] *= (g_pi / 180);
+            transform.rotate[i] *= (g_pi / g_pi_in_degree);
         }
 
         happly::PLYData mesh_data(mesh_path.string());
         auto vertices = mesh_data.getVertexPositions();
         transform_mesh(vertices, transform);
 
-        float tex[6] = {0, 0, 0, 0, 0, 0};
+        std::array<tex_coords_t, 3> tex{};
         const auto indices = mesh_data.getFaceIndices();
         for (auto &&index : indices) {
             const auto vert0 = vertices[index[0]];
             const auto vert1 = vertices[index[1]];
             const auto vert2 = vertices[index[2]];
-            const auto point0 = point_t(vert0[0], vert0[1], vert0[2]);
-            const auto point1 = point_t(vert1[0], vert1[1], vert1[2]);
-            const auto point2 = point_t(vert2[0], vert2[1], vert2[2]);
+            const auto point0 = point_t((float)vert0[0], (float)vert0[1], (float)vert0[2]);
+            const auto point1 = point_t((float)vert1[0], (float)vert1[1], (float)vert1[2]);
+            const auto point2 = point_t((float)vert2[0], (float)vert2[1], (float)vert2[2]);
             world.push_back(std::make_shared<triangle>(point0, point1, point2, tex, mesh_mat));
         }
     });

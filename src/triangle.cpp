@@ -1,9 +1,11 @@
 #include "triangle.hpp"
 
+#include <array>
+
 #include "aabb.hpp"
 #include "ray.hpp"
 
-std::optional<hit_record> triangle::hit(const ray &r, float tmin, float tmax) const {
+hit_res_t triangle::hit(const ray &r, float tmin, float tmax) const {
     const float divisor = normal_.dot(r.direction());
     if (divisor == 0) {
         return std::nullopt;
@@ -14,10 +16,10 @@ std::optional<hit_record> triangle::hit(const ray &r, float tmin, float tmax) co
     }
 
     const point_t point = r.point_at(t);
-    float bary[3];
+    std::array<float, 3> bary{};
     for (int i = 0; i < 3; i++) {
-        bary[i] = edges_[i].cross(point - vertex(i + 1)).len() / area2_;
-        if (bary[i] < 0 || bary[i] > 1) {
+        bary.at(i) = edges_.at(i).cross(point - vertex(i + 1)).len() / area2_;
+        if (bary.at(i) < 0 || bary.at(i) > 1) {
             return std::nullopt;
         }
     }
@@ -32,27 +34,27 @@ std::optional<hit_record> triangle::hit(const ray &r, float tmin, float tmax) co
     rec.outside = divisor < 0;
     rec.normal = divisor < 0 ? normal_ : -normal_;
     rec.pmat = pmat_;
-    rec.u = rec.v = 0;
+    rec.tex_coords = {0, 0};
     for (int i = 0; i < 3; i++) {
-        rec.u += bary[i] * tex_coords_[i].first;
-        rec.v += bary[i] * tex_coords_[i].second;
+        rec.tex_coords.at(0) += bary.at(i) * tex_coords_.at(i).at(0);
+        rec.tex_coords.at(1) += bary.at(i) * tex_coords_.at(i).at(1);
     }
     return rec;
 }
 
 aabb triangle::bounding_box() const {
     const auto inf = std::numeric_limits<float>::max();
-    float coord_min[3] = {inf, inf, inf};
-    float coord_max[3] = {-inf, -inf, -inf};
+    std::array<float, 3> coord_min = {inf, inf, inf};
+    std::array<float, 3> coord_max = {-inf, -inf, -inf};
     for (auto &&vertex : vertices_) {
         for (int k = 0; k < 3; k++) {  // x,y,z维度
-            coord_min[k] = std::min(coord_min[k], vertex[k]);
-            coord_max[k] = std::max(coord_max[k], vertex[k]);
+            coord_min.at(k) = std::min(coord_min.at(k), vertex[k]);
+            coord_max.at(k) = std::max(coord_max.at(k), vertex[k]);
         }
     }
     for (int k = 0; k < 3; k++) {
-        coord_min[k] -= 0.0001;
-        coord_max[k] += 0.0001;
+        coord_min.at(k) -= 0.0001F;
+        coord_max.at(k) += 0.0001F;
     }
-    return aabb{vec3_t{coord_min}, vec3_t{coord_max}};
+    return aabb{vec3_t{coord_min.data()}, vec3_t{coord_max.data()}};
 }

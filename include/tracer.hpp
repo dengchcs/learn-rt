@@ -4,14 +4,14 @@
 #include <execution>
 #include <iostream>
 #include <numeric>
+#include <vector>
 
-#include "stb_image_write.h"
 #include "bvh.hpp"
 #include "camera.hpp"
 #include "common.hpp"
 #include "hittable.hpp"
 #include "material.hpp"
-
+#include "stb_image_write.h"
 
 class tracer {
 public:
@@ -23,26 +23,46 @@ public:
         color_t background;
     };
 
-    tracer(const config &conf, const camera &cam) : config_(conf), cam_(cam) {}
+    tracer(const config &conf, const camera &cam)
+        : config_(conf), cam_(cam), data_(config_.width * config_.height * 3) {}
 
-    ~tracer() { delete[] data_; }
+    // ~tracer() { delete[] data_; }
 
 private:
     config config_;
     camera cam_;
-    unsigned char *data_{nullptr};
+    // unsigned char *data_{nullptr};
+    std::vector<unsigned char> data_;
+    /**
+     * @brief 写入一个像素, 图像左上角为起点
+     */
+    void write_color(int row, int col, const color_t &pixel) {
+        auto r = pixel.x();
+        auto g = pixel.y();
+        auto b = pixel.z();
+        const float scale = 1.0F / (float)config_.samples_per_pixel;
+        r = std::sqrt(r * scale);  // Gamma Correction (gamma = 0.5), gamma越小图片越亮
+        g = std::sqrt(g * scale);
+        b = std::sqrt(b * scale);
 
-private:
+        constexpr int max_color = 255;
+        int index = (col + row * config_.width) * 3;
+        data_[index + 0] = (int)(max_color * clamp(r, 0, 1));
+        data_[index + 1] = (int)(max_color * clamp(g, 0, 1));
+        data_[index + 2] = (int)(max_color * clamp(b, 0, 1));
+    }
+
     template <typename T>
     [[nodiscard]] color_t cast_ray(const ray &r, const T &target, int depth) const {
         if (depth <= 0) {
             return {0, 0, 0};
         }
-        std::optional<hit_record> record = std::nullopt;
+        hit_res_t record = std::nullopt;
+        constexpr float ray_nearest_t = 0.001F;
         if constexpr (std::is_same_v<T, bvh>) {
-            record = target.hit(r, 0.001, g_infinity);
+            record = target.hit(r, ray_nearest_t, g_infinity);
         } else if constexpr (std::is_same_v<T, world_t>) {
-            record = hit(target, r, 0.001, g_infinity);
+            record = hit(target, r, ray_nearest_t, g_infinity);
         } else {
             std::cerr << "unknown target type\n";
         }
@@ -51,7 +71,7 @@ private:
         }
         ray scattered;
         color_t attenuation;
-        const color_t emitted = record->pmat->emit(record->u, record->v, record->point);
+        const color_t emitted = record->pmat->emit(record->tex_coords, record->point);
         const bool scatter = record->pmat->scatter(r, record.value(), attenuation, scattered);
         if (!scatter) {
             return emitted;
@@ -59,29 +79,11 @@ private:
         return emitted + attenuation * cast_ray(scattered, target, depth - 1);
     }
 
-    /**
-     * @brief 写入一个像素, 图像左上角为起点
-     */
-    void write_color(int row, int col, const color_t &pixel) {
-        auto r = pixel.x(), g = pixel.y(), b = pixel.z();
-        const float scale = 1.0f / (float)config_.samples_per_pixel;
-        r = std::sqrt(r * scale);  // Gamma Correction (gamma = 0.5), gamma越小图片越亮
-        g = std::sqrt(g * scale);
-        b = std::sqrt(b * scale);
-
-        int index = (col + row * config_.width) * 3;
-        data_[index + 0] = static_cast<int>(256 * clamp(r, 0, 0.999));
-        data_[index + 1] = static_cast<int>(256 * clamp(g, 0, 0.999));
-        data_[index + 2] = static_cast<int>(256 * clamp(b, 0, 0.999));
-    }
-
     template <typename T>
     void trace_sequential(const T &target, const std::string &path) {
         std::cout << "scene rendering: started...\n";
         std::cout << "\twriting data to " << path << ".\n";
         auto start = std::chrono::steady_clock::now();
-        delete data_;
-        data_ = new unsigned char[config_.width * config_.height * 3];
         for (int j = config_.height - 1; j >= 0; j--) {
             for (int i = 0; i < config_.width; i++) {
                 color_t color{0, 0, 0};
@@ -91,11 +93,13 @@ private:
                     ray r = cam_.get_ray(u, v);
                     color += cast_ray(r, target, config_.max_depth);
                 }
-                const int row = config_.height - 1 - j, col = i;
+                const int row = config_.height - 1 - j;
+                const int col = i;
                 write_color(row, col, color);
             }
         }
-        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
+        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_.data(),
+                       config_.width * 3);
         auto end = std::chrono::steady_clock::now();
         std::cout << "scene rendering: done in "
                   << std::chrono::duration<double>(end - start).count() << "s.\n\n";
@@ -106,8 +110,6 @@ private:
         std::cout << "scene rendering: started...\n";
         std::cout << "\twriting data to " << path << ".\n";
         auto start = std::chrono::steady_clock::now();
-        delete data_;
-        data_ = new unsigned char[config_.width * config_.height * 3];
 
         std::vector<int> range(config_.width * config_.height);
         std::iota(range.begin(), range.end(), 0);
@@ -124,7 +126,8 @@ private:
             }
             write_color(row, col, color);
         });
-        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_, config_.width * 3);
+        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_.data(),
+                       config_.width * 3);
         auto end = std::chrono::steady_clock::now();
         std::cout << "scene rendering: done in "
                   << std::chrono::duration<double>(end - start).count() << "s.\n\n";

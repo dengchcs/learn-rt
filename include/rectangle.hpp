@@ -23,8 +23,7 @@ public:
         edge_v_ = normal_.cross(edge_u_);
     }
 
-    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin,
-                                                float tmax) const override;
+    [[nodiscard]] hit_res_t hit(const ray &r, float tmin, float tmax) const override;
 
     [[nodiscard]] aabb bounding_box() const override;
 };

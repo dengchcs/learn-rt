@@ -11,7 +11,6 @@
 #include "aabb.hpp"
 #include "hittable.hpp"
 
-
 class bvh {
     std::unique_ptr<bvh> left_, right_;
     int split_axis_{0};
@@ -21,8 +20,7 @@ class bvh {
 public:
     bvh(world_t &world, int start, int end);
 
-    [[nodiscard]] std::optional<hit_record> hit(const ray &r, float tmin,
-                                                float tmax) const;
+    [[nodiscard]] hit_res_t hit(const ray &r, float tmin, float tmax) const;
 };
 
 #endif  // RT_BVH_HPP

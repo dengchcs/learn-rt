@@ -2,8 +2,8 @@
 
 #include "aabb.hpp"
 
-std::optional<hit_record> hit(const world_t &world, const ray &r, float tmin, float tmax) {
-    std::optional<hit_record> res = std::nullopt;
+hit_res_t hit(const world_t &world, const ray &r, float tmin, float tmax) {
+    hit_res_t res = std::nullopt;
     float closest = tmax;
     for (auto &&object : world) {
         const auto record = object->hit(r, tmin, closest);

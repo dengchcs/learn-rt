@@ -13,7 +13,6 @@ public:
 
     [[nodiscard]] unit_vec3 direction() const { return direction_; }
 
-public:
     ray() = default;
     ray(const point_t &origin, const vec3_t &direction) : origin_(origin), direction_(direction) {}
 

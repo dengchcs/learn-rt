@@ -3,14 +3,14 @@
 
 #include <iostream>
 
-#include "stb_image.h"
 #include "common.hpp"
+#include "stb_image.h"
 #include "utils.hpp"
-
 
 class texture {
 public:
-    [[nodiscard]] virtual color_t color_at(float u, float v, const point_t &point) const = 0;
+    virtual ~texture() = default;
+    [[nodiscard]] virtual color_t color_at(tex_coords_t tex_coords, const point_t &point) const = 0;
 };
 
 class solid_color : public texture {
@@ -21,8 +21,7 @@ public:
 
     solid_color(float r, float g, float b) : value_(r, g, b) {}
 
-public:
-    [[nodiscard]] color_t color_at(float u, float v, const point_t &point) const override {
+    [[nodiscard]] color_t color_at(tex_coords_t tex_coords, const point_t &point) const override {
         return value_;
     }
 };
@@ -39,16 +38,15 @@ public:
             std::cerr << "error loading texture\n";
         }
     }
-    ~image_texture() { stbi_image_free(data_); }
+    ~image_texture() override { stbi_image_free(data_); }
 
-public:
-    [[nodiscard]] color_t color_at(float u, float v, const point_t &point) const override {
-        u = clamp(u, 0.0f, 1.0f);
-        v = 1.0f - clamp(v, 0.0f, 1.0f);
+    [[nodiscard]] color_t color_at(tex_coords_t tex_coords, const point_t &point) const override {
+        auto u = clamp(tex_coords.at(0), 0.0F, 1.0F);
+        auto v = 1.0F - clamp(tex_coords.at(1), 0.0F, 1.0F);
         const int i = std::min(width_ - 1, (int)(u * (float)width_));
         const int j = std::min(height_ - 1, (int)(v * (float)height_));
-        const auto pixel = data_ + j * 3 * width_ + i * 3;
-        const float scale = 1.0f / 255.0f;
+        auto *const pixel = data_ + j * 3 * width_ + i * 3;
+        constexpr float scale = 1.0F / 255.0F;
         return scale * color_t(pixel[0], pixel[1], pixel[2]);
     }
 };
