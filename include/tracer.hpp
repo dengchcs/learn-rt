@@ -1,6 +1,8 @@
 #ifndef RT_TRACER_HPP
 #define RT_TRACER_HPP
 
+#include <cmath>
+#include <cstdlib>
 #include <execution>
 #include <iostream>
 #include <numeric>
@@ -27,32 +29,33 @@ public:
     tracer(const config &conf, const camera &cam)
         : config_(conf), cam_(cam), data_(config_.width * config_.height * 3) {}
 
-    // ~tracer() { delete[] data_; }
-
 private:
     config config_;
     camera cam_;
-    // unsigned char *data_{nullptr};
     std::vector<unsigned char> data_;
+
     /**
      * @brief 写入一个像素, 图像左上角为起点
      */
     void write_color(int row, int col, const color_t &pixel) {
-        auto r = pixel.x();
-        auto g = pixel.y();
-        auto b = pixel.z();
-        const float scale = 1.0F / (float)config_.samples_per_pixel;
-        r = std::sqrt(r * scale);  // Gamma Correction (gamma = 0.5), gamma越小图片越亮
-        g = std::sqrt(g * scale);
-        b = std::sqrt(b * scale);
-
         constexpr int max_color = 255;
-        int index = (col + row * config_.width) * 3;
-        data_[index + 0] = (int)(max_color * clamp(r, 0, 1));
-        data_[index + 1] = (int)(max_color * clamp(g, 0, 1));
-        data_[index + 2] = (int)(max_color * clamp(b, 0, 1));
+        const int index = (col + row * config_.width) * 3;
+        for (int i = 0; i < 3; i++) {
+            // Gamma Correction (gamma = 0.5), gamma越小图片越亮
+            const auto corrected = std::sqrt(pixel[i]);
+            data_[index + i] = (int)(max_color * clamp(corrected, 0, 1));
+        }
     }
 
+    /**
+     * @brief 向场景中"发射"一条光线, 追踪其反射/折射, 并计算光线的颜色
+     *
+     * @tparam T 场景聚合体的类型, 必须是: world_t 或 bvh
+     * @param r 光线定义
+     * @param target 场景聚合体
+     * @param depth 递归深度, 为0时退出递归
+     * @return color_t 光线追踪得到的颜色
+     */
     template <typename T>
     [[nodiscard]] color_t cast_ray(const ray &r, const T &target, int depth) const {
         if (depth <= 0) {
@@ -61,11 +64,12 @@ private:
         hit_res_t record = std::nullopt;
         constexpr float ray_nearest_t = 0.001F;
         if constexpr (std::is_same_v<T, bvh>) {
-            record = target.hit(r, ray_nearest_t, g_infinity);
+            record = target.hit(r, ray_nearest_t, g_max);
         } else if constexpr (std::is_same_v<T, world_t>) {
-            record = hit(target, r, ray_nearest_t, g_infinity);
+            record = hit(target, r, ray_nearest_t, g_max);
         } else {
             std::cerr << "unknown target type\n";
+            std::abort();
         }
         if (!record.has_value()) {
             return config_.background;
@@ -80,6 +84,14 @@ private:
         return emitted + attenuation * cast_ray(scattered, target, depth - 1);
     }
 
+    /**
+     * @brief 采样图片中的单个像素、渲染并写入颜色值
+     *
+     * @tparam T 场景聚合体的类型, 必须是: world_t 或 bvh
+     * @param target 场景聚合体
+     * @param row 像素所在行, 从上到下
+     * @param col 像素所在列, 从左到右
+     */
     template <typename T>
     void render_single_pixel(const T &target, int row, int col) {
         color_t color{0, 0, 0};
@@ -90,9 +102,17 @@ private:
             ray ray = cam_.get_ray(u, v);
             color += cast_ray(ray, target, config_.max_depth);
         }
+        color /= (float)config_.samples_per_pixel;
         write_color(row, col, color);
     }
 
+    /**
+     * @brief 通过模板统一是否使用BVH的两种情形; 内部条件判断统一是否使用多核算法
+     *
+     * @tparam T 场景聚合体的类型, 必须是: world_t 或 bvh
+     * @param target 场景聚合体
+     * @param path 图片文件的保存路径
+     */
     template <typename T>
     void trace_unified(const T &target, const std::string &path) {
         std::cout << "scene rendering: started...\n";
@@ -123,6 +143,12 @@ private:
     }
 
 public:
+    /**
+     * @brief 渲染场景, 将结果保存到图片文件中
+     *
+     * @param world 场景定义, 由一系列基本元素组成
+     * @param path 图片文件的保存路径
+     */
     void trace(const world_t &world, const std::string &path) {
         if (config_.use_bvh) {
             std::cout << "BVH building: started...\n";

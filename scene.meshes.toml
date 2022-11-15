@@ -1,5 +1,5 @@
-# 纹理名称, 纹理类型, 纹理参数
-# 纹理名称应该是唯一的, 可以在材质定义中引用
+# 详细配置说明参考scene.final.toml文件
+
 textures = [
     ["tex-red",     "solid", 0.54, 0, 0],
     ["tex-green",   "solid", 0, 0.4, 0],
@@ -11,8 +11,6 @@ textures = [
     ["tex-man",     "solid", 0.00, 0.50, 0.00],
 ]
 
-# 材质名称, 材质类型, 是否使用纹理, 若是则提供纹理名称, 否则提供材质参数
-# 材质名称应该是唯一的, 可以在物体定义中引用
 materials = [
     ["mat-lam-red",         "lambertian",   true,   "tex-red"],
     ["mat-lam-green",       "lambertian",   true,   "tex-green"],
@@ -25,7 +23,6 @@ materials = [
     ["mat-light-white",     "light",        false,  4, 4, 4],
 ]
 
-# 矩形定义: 一个顶点+两条正交边+材质名称, 两条边分别被用作纹理映射的uv方向
 rectangles = [
     # "屋子"+顶部光照
     [[-50, 50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 顶面
@@ -37,8 +34,6 @@ rectangles = [
     [[-50, -50, 50], [100, 0, 0], [0, 100, 0], "mat-lam-rice"], # 后面
 ]
 
-# 三角面片模型路径, 材质(只支持纯色纹理), 中心平移量, 表面到中心点的最长距离, 绕XYZ轴的旋转度数(角度制)
-# "中心"定义为所有顶点的平均值, 平移量和距离是为了调整模型位置和大小设置的
 meshes = [
     ["assets/happy_vrip_res3.ply", "mat-metal-buddha", [0, -30, -15], 40, [0, 0, 0]],
     ["assets/happy_vrip_res3.ply", "mat-metal-buddha", [-30, -40, -30], 20, [0, +15, 0]],
@@ -48,19 +43,19 @@ meshes = [
 ]
 
 [canvas]
-width = 400             # 图片宽度
-height = 300            # 图片高度
-background = [0.01, 0.01, 0.01] # 背景色
+width = 400
+height = 300
+background = [0.01, 0.01, 0.01]
 
 [options]
-samples_per_pixel = 100 # 每个像素的采样数
-max_depth = 10         # 递归的最大层数
-use_bvh = true          # 是否使用bvh加速
-parallel = true         # 是否并行渲染
+samples_per_pixel = 100
+max_depth = 10
+use_bvh = true
+parallel = true
 
 [camera]
-lookfrom = [0, -10, 50]    # 相机位置
-lookat = [0, -10, -50]     # 焦点
-vup = [0, 1, 0]         # 相机上方向
-aperture = 0.0          # 相机"孔径", 孔径越大场景越模糊
-vfov = 90               # 竖直方向的视角, 角度值
+lookfrom = [0, -10, 50]
+lookat = [0, -10, -50]
+vup = [0, 1, 0]
+aperture = 0.0
+vfov = 90

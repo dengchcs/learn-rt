@@ -14,11 +14,6 @@ class sphere : public hittable {
     float radius_;
     std::shared_ptr<material> pmat_;
 
-public:
-    [[nodiscard]] point_t center() const { return center_; }
-
-    [[nodiscard]] float radius() const { return radius_; }
-
 private:
     /**
      * @brief 计算球面一点的参数坐标, 参数范围为[0, 1] * [0, 1]

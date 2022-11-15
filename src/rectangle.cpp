@@ -34,9 +34,8 @@ hit_res_t rectangle::hit(const ray &r, float tmin, float tmax) const {
 }
 
 aabb rectangle::bounding_box() const {
-    constexpr auto inf = std::numeric_limits<float>::max();
-    std::array<float, 3> coord_min = {inf, inf, inf};
-    std::array<float, 3> coord_max = {-inf, -inf, -inf};
+    std::array<float, 3> coord_min = {g_max, g_max, g_max};
+    std::array<float, 3> coord_max = {-g_max, -g_max, -g_max};
     std::array<point_t, 4> vertices = {corner_, corner_ + edge_u_, corner_ + edge_v_,
                                        corner_ + edge_u_ + edge_v_};
     for (auto &&vertex : vertices) {
@@ -46,8 +45,8 @@ aabb rectangle::bounding_box() const {
         }
     }
     for (int k = 0; k < 3; k++) {
-        coord_min.at(k) -= 0.0001F;
-        coord_max.at(k) += 0.0001F;
+        coord_min.at(k) -= aabb::dim_padding;
+        coord_max.at(k) += aabb::dim_padding;
     }
     return aabb{vec3_t{coord_min.data()}, vec3_t{coord_max.data()}};
 }

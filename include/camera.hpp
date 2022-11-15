@@ -40,10 +40,6 @@ public:
         const vec3_t offset = rd.x() * horizontal_.normalized() + rd.y() * vertical_.normalized();
         return {eye_ + offset, lower_left_ + horizontal_ * u + vertical_ * v - eye_ - offset};
     }
-
-    [[nodiscard]] ray get_ray_no_blur(float u, float v) const {
-        return {eye_, lower_left_ + horizontal_ * u + vertical_ * v - eye_};
-    }
 };
 
 #endif  // RT_CAMERA_HPP

@@ -137,7 +137,7 @@ using point_t = vector3;
 
 using tex_coords_t = std::array<float, 2>;
 
-constexpr auto g_infinity = std::numeric_limits<float>::max();
+constexpr auto g_max = std::numeric_limits<float>::max();
 constexpr float g_pi = 3.141592653589793238462643383279502884F;
 constexpr float g_pi_in_degree = 180.0F;
 

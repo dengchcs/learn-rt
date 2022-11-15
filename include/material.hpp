@@ -16,7 +16,7 @@ public:
      * @param attenuation r,g,b三色光分别的反/折射率
      * @param scattered 反/折射光线
      */
-    virtual bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation,
+    virtual bool scatter(const ray &ray_in, const hit_record &record, color_t &attenuation,
                          ray &scattered) const = 0;
 
     [[nodiscard]] virtual color_t emit(tex_coords_t tex_coords, const point_t &point) const {
@@ -58,13 +58,13 @@ class metal : public material {
     std::shared_ptr<texture> albedo_;
     float fuzz_;  // 模糊程度
 public:
-    explicit metal(const vec3_t &albedo, float f = 0)
-        : albedo_(std::make_shared<solid_color>(albedo)), fuzz_(clamp(f, 0, 1)) {}
+    explicit metal(const vec3_t &albedo, float fuzz = 0)
+        : albedo_(std::make_shared<solid_color>(albedo)), fuzz_(clamp(fuzz, 0, 1)) {}
 
     explicit metal(std::shared_ptr<texture> tex, float f = 0)
         : albedo_(std::move(tex)), fuzz_(clamp(f, 0, 1)) {}
 
-    bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation,
+    bool scatter(const ray &ray_in, const hit_record &record, color_t &attenuation,
                  ray &scattered) const override {
         const vec3_t reflected = reflect(ray_in.direction(), record.normal);
         scattered = {record.point, reflected + fuzz_ * random_in_unit_sphere()};

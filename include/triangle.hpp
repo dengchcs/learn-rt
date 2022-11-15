@@ -10,10 +10,10 @@ class triangle : public hittable {
     std::array<point_t, 3> vertices_;
     unit_vec3 normal_;      // 顶点按右手方向旋转得到的法向
     float dist_to_origin_;  // A*x+B*y+C*z+D=0中的D
+    float area2_;           // 面积的两倍
     std::shared_ptr<material> pmat_;
     std::array<tex_coords_t, 3> tex_coords_;
     std::array<vec3_t, 3> edges_;
-    float area2_;
 
 public:
     triangle(const point_t &point0, const point_t &point1, const point_t &point2,
@@ -29,7 +29,7 @@ public:
     }
 
 private:
-    [[nodiscard]] point_t vertex(int i) const { return vertices_.at(i % 3); }
+    [[nodiscard]] point_t vertex(int idx) const { return vertices_.at(idx % 3); }
 
 public:
     [[nodiscard]] hit_res_t hit(const ray &r, float tmin, float tmax) const override;

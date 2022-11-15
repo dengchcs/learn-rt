@@ -15,6 +15,7 @@ class aabb {
     point_t high_;
 
 public:
+    static constexpr float dim_padding = 0.0001F;
     aabb() {
         const auto nlow = std::numeric_limits<float>::lowest();
         const auto nhigh = std::numeric_limits<float>::max();
@@ -57,18 +58,6 @@ public:
         const point_t res_high{std::max(high_.x(), high.x()), std::max(high_.y(), high.y()),
                                std::max(high_.z(), high.z())};
         return {res_low, res_high};
-    }
-
-    [[nodiscard]] point_t low() const { return low_; }
-
-    [[nodiscard]] point_t high() const { return high_; }
-
-    [[nodiscard]] int max_extent_dim() const {
-        std::array<float, 3> ext{};
-        for (int i = 0; i < 3; i++) {
-            ext.at(i) = std::abs(low_[i] - high_[i]);
-        }
-        return (int)std::distance(ext.begin(), std::max_element(ext.begin(), ext.end()));
     }
 
     [[nodiscard]] point_t centroid() const { return (low_ + high_) / 2.0; }
