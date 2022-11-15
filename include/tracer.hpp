@@ -4,6 +4,7 @@
 #include <execution>
 #include <iostream>
 #include <numeric>
+#include <string>
 #include <vector>
 
 #include "bvh.hpp"
@@ -80,54 +81,42 @@ private:
     }
 
     template <typename T>
-    void trace_sequential(const T &target, const std::string &path) {
+    void render_single_pixel(const T &target, int row, int col) {
+        color_t color{0, 0, 0};
+        for (int sample = 0; sample < config_.samples_per_pixel; sample++) {
+            const float u = ((float)col + random_float()) / (float)config_.width;
+            const float v =
+                ((float)(config_.height - 1 - row) + random_float()) / (float)config_.height;
+            ray ray = cam_.get_ray(u, v);
+            color += cast_ray(ray, target, config_.max_depth);
+        }
+        write_color(row, col, color);
+    }
+
+    template <typename T>
+    void trace_unified(const T &target, const std::string &path) {
         std::cout << "scene rendering: started...\n";
         std::cout << "\twriting data to " << path << ".\n";
         auto start = std::chrono::steady_clock::now();
-        for (int j = config_.height - 1; j >= 0; j--) {
-            for (int i = 0; i < config_.width; i++) {
-                color_t color{0, 0, 0};
-                for (int s = 0; s < config_.samples_per_pixel; s++) {
-                    const float u = ((float)i + random_float()) / (float)config_.width;
-                    const float v = ((float)j + random_float()) / (float)config_.height;
-                    ray r = cam_.get_ray(u, v);
-                    color += cast_ray(r, target, config_.max_depth);
+
+        if (config_.parallel) {
+            std::vector<int> range(config_.width * config_.height);
+            std::iota(range.begin(), range.end(), 0);
+            std::for_each(std::execution::par, range.begin(), range.end(), [&](int index) {
+                const int row = index / config_.width;
+                const int col = index % config_.width;
+                render_single_pixel(target, row, col);
+            });
+        } else {
+            for (int row = 0; row < config_.height; row++) {
+                for (int col = 0; col < config_.width; col++) {
+                    render_single_pixel(target, row, col);
                 }
-                const int row = config_.height - 1 - j;
-                const int col = i;
-                write_color(row, col, color);
             }
         }
         stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_.data(),
                        config_.width * 3);
-        auto end = std::chrono::steady_clock::now();
-        std::cout << "scene rendering: done in "
-                  << std::chrono::duration<double>(end - start).count() << "s.\n\n";
-    }
 
-    template <typename T>
-    void trace_parallel(const T &target, const std::string &path) {
-        std::cout << "scene rendering: started...\n";
-        std::cout << "\twriting data to " << path << ".\n";
-        auto start = std::chrono::steady_clock::now();
-
-        std::vector<int> range(config_.width * config_.height);
-        std::iota(range.begin(), range.end(), 0);
-        std::for_each(std::execution::par, range.begin(), range.end(), [&](int index) {
-            const int row = index / config_.width;
-            const int col = index % config_.width;
-            color_t color{0, 0, 0};
-            for (int s = 0; s < config_.samples_per_pixel; s++) {
-                const float u = ((float)col + random_float()) / (float)config_.width;
-                const float v =
-                    ((float)(config_.height - 1 - row) + random_float()) / (float)config_.height;
-                ray r = cam_.get_ray(u, v);
-                color += cast_ray(r, target, config_.max_depth);
-            }
-            write_color(row, col, color);
-        });
-        stbi_write_png(path.c_str(), config_.width, config_.height, 3, data_.data(),
-                       config_.width * 3);
         auto end = std::chrono::steady_clock::now();
         std::cout << "scene rendering: done in "
                   << std::chrono::duration<double>(end - start).count() << "s.\n\n";
@@ -143,17 +132,9 @@ public:
             auto end = std::chrono::steady_clock::now();
             std::cout << "BVH building: done in "
                       << std::chrono::duration<double>(end - start).count() << "s.\n\n";
-            if (config_.parallel) {
-                trace_parallel(bvh, path);
-            } else {
-                trace_sequential(bvh, path);
-            }
+            trace_unified(bvh, path);
         } else {
-            if (config_.parallel) {
-                trace_parallel(world, path);
-            } else {
-                trace_sequential(world, path);
-            }
+            trace_unified(world, path);
         }
     }
 };

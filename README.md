@@ -26,7 +26,7 @@ sudo apt install libtbb-dev
 
 ## 构建
 
-项目使用 [xmake](xmake.io) 构建. 在 `xmake.lua` 文件所在目录下执行:
+项目使用 [xmake](https://xmake.io) 构建. 在 `xmake.lua` 文件所在目录下执行:
 
 ```bash
 xmake f -m release  # 使用release模式编译
