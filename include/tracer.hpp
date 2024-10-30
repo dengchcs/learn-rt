@@ -23,16 +23,38 @@ public:
         int samples_per_pixel;
         int max_depth;
         bool use_bvh, parallel;
-        color_t background;
+        // color_t background;
+        // std::string envlight_path;
     };
 
-    tracer(const config &conf, const camera &cam)
-        : config_(conf), cam_(cam), data_(config_.width * config_.height * 3) {}
+    struct envlight {
+        unsigned char *data;
+        int width, height, channels;
+        envlight(const std::string &path) {
+            data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+            if (!data) {
+                std::cerr << "failed to load envlight: " << path << '\n';
+                std::abort();
+            }
+        }
+        ~envlight() { stbi_image_free(data); }
+        color_t sample(float u, float v) const {
+            const int x = std::clamp((int)(u * width), 0, width - 1);
+            const int y = std::clamp((int)(v * height), 0, height - 1);
+            const int index = (x + y * width) * channels;
+            return {data[index] / 255.0F, data[index + 1] / 255.0F, data[index + 2] / 255.0F};
+        }
+    };
+
+    tracer(const config &conf, const camera &cam, const std::string& envlight_path)
+        : config_(conf), cam_(cam), data_(config_.width * config_.height * 3), envlight_(envlight_path){}
 
 private:
     config config_;
     camera cam_;
     std::vector<unsigned char> data_;
+    envlight envlight_;
+
 
     /**
      * @brief 写入一个像素, 图像左上角为起点
@@ -72,7 +94,12 @@ private:
             std::abort();
         }
         if (!record.has_value()) {
-            return config_.background;
+            const auto direction = r.direction();
+            const float elev = acos(direction.y());
+            const float azim = atan2(direction.z(), direction.x());
+            const float u = azim / (2 * g_pi) + 0.5;
+            const float v = elev / g_pi;
+            return envlight_.sample(u, v);
         }
         ray scattered;
         color_t attenuation;

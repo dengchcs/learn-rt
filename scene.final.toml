@@ -53,7 +53,7 @@ triangles = [
 rectangles = [
     # "屋子"+顶部光照
     [[-50, 50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 顶面
-    [[-20, 49.9, -20], [40, 0, 0], [0, 0, 40], "mat-light-white"], # 顶光
+    [[-60, 49.9, -60], [120, 0, 0], [0, 0, 120], "mat-light-white"], # 顶光
     [[-50, 50, -50], [100, 0, 0], [0, -100, 0], "mat-lam-rice"], # 前面
     [[-50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-red"], # 左侧面
     [[50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-green"], # 右侧面
@@ -76,14 +76,17 @@ meshes = [
     ["assets/bun_zipper.ply", "mat-lam-rabbit", [0, -30, -10], 30, [0, 30, 0]],
 ]
 
+envlight = "assets/envlight.jpg" # 背景图片
+
 [canvas]
-width = 400             # 图片宽度
-height = 300            # 图片高度
-background = [0.01, 0.01, 0.01] # 背景色
+width = 1200             # 图片宽度
+height = 900            # 图片高度
+# background = [1.0, 1.0, 1.0]
+# background = [0.01, 0.01, 0.01] # 背景色
 
 [options]
-samples_per_pixel = 100 # 每个像素的采样数
-max_depth = 10         # 递归的最大层数
+samples_per_pixel = 1024 # 每个像素的采样数
+max_depth = 3         # 递归的最大层数
 use_bvh = true          # 是否使用bvh加速
 parallel = true         # 是否并行渲染
 
@@ -92,4 +95,4 @@ lookfrom = [0, -10, 50]    # 相机位置
 lookat = [0, -10, -50]     # 焦点
 vup = [0, 1, 0]         # 相机上方向
 aperture = 0.0          # 相机"孔径", 孔径越大场景越模糊
-vfov = 90               # 竖直方向的视角, 角度值
+vfov = 120               # 竖直方向的视角, 角度值

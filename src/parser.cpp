@@ -251,13 +251,13 @@ tracer parser::make_tracer() const {
     const auto config = toml::parse_file(scene_path_.string());
     const int width = config["canvas"]["width"].value<int>().value();
     const int height = config["canvas"]["height"].value<int>().value();
-    const auto bkg_vec = parse_vec(*config["canvas"]["background"].as_array(), 0, 3);
-    const color_t bkg{bkg_vec.data()};
+    // const auto bkg_vec = parse_vec(*config["canvas"]["background"].as_array(), 0, 3);
+    // const color_t bkg{bkg_vec.data()};
     const int samples_per_pixel = config["options"]["samples_per_pixel"].value<int>().value();
     const int max_depth = config["options"]["max_depth"].value<int>().value();
     const bool use_bvh = config["options"]["use_bvh"].value<bool>().value();
     const bool parallel = config["options"]["parallel"].value<bool>().value();
-    tracer::config tconfig{width, height, samples_per_pixel, max_depth, use_bvh, parallel, bkg};
+    tracer::config tconfig{width, height, samples_per_pixel, max_depth, use_bvh, parallel};
 
     const float aspect_ratio = (float)width / (float)height;
 
@@ -273,6 +273,7 @@ tracer parser::make_tracer() const {
     const float vfov = config["camera"]["vfov"].value<float>().value();
     camera cam{lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus};
 
+    const auto envlight_path = config["envlight"].value<std::string>().value();
     std::cout << "tracer configuring: done.\n\n";
-    return {tconfig, cam};
+    return {tconfig, cam, envlight_path};
 }
