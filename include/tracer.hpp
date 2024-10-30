@@ -38,11 +38,30 @@ public:
             }
         }
         ~envlight() { stbi_image_free(data); }
-        color_t sample(float u, float v) const {
-            const int x = std::clamp((int)(u * width), 0, width - 1);
-            const int y = std::clamp((int)(v * height), 0, height - 1);
+        color_t sample(const float u, const float v) const {
+            const float uwidth = u * width;
+            const float vheight = v * height;
+            const int x = std::clamp((int)uwidth, 0, width - 1);
+            const int y = std::clamp((int)vheight, 0, height - 1);
+
+            const float u2center = uwidth - (x + 0.5);
+            const float v2center = vheight - (y + 0.5);
+            const int x1 =  u2center > 0 ? std::min(x + 1, width - 1) : std::max(x - 1, 0);
+            const int y1 =  v2center > 0 ? std::min(y + 1, height - 1) : std::max(y - 1, 0);
+
             const int index = (x + y * width) * channels;
-            return {data[index] / 255.0F, data[index + 1] / 255.0F, data[index + 2] / 255.0F};
+            const color_t color = {(float)data[index], (float)data[index + 1], (float)data[index + 2]};
+            const int index1 = (x1 + y * width) * channels;
+            const color_t color1 = {(float)data[index1], (float)data[index1 + 1], (float)data[index1 + 2]};
+            const auto ycolor = color * abs(u2center) + color1 * abs(1 - abs(u2center));
+            const int index2 = (x + y1 * width) * channels;
+            const color_t color2 = {(float)data[index2], (float)data[index2 + 1], (float)data[index2 + 2]};
+            const int index3 = (x1 + y1 * width) * channels;
+            const color_t color3 = {(float)data[index3], (float)data[index3 + 1], (float)data[index3 + 2]};
+            const auto y1color = color2 * abs(u2center) + color3 * abs(1 - abs(u2center));
+
+            auto lerped = ycolor * abs(v2center) + y1color * abs(1 - abs(v2center));
+            return lerped / 255.0;
         }
     };
 
@@ -95,8 +114,8 @@ private:
         }
         if (!record.has_value()) {
             const auto direction = r.direction();
-            const float elev = acos(direction.y());
-            const float azim = atan2(direction.z(), direction.x());
+            const float elev = std::acos(direction.y());
+            const float azim = std::atan2(direction.z(), direction.x());
             const float u = azim / (2 * g_pi) + 0.5;
             const float v = elev / g_pi;
             return envlight_.sample(u, v);
