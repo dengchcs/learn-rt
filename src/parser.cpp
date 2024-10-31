@@ -2,7 +2,6 @@
 
 #include <array>
 
-// #include "happly.h"
 #include "tiny_obj_loader.h"
 #include "rectangle.hpp"
 #include "sphere.hpp"
@@ -214,9 +213,6 @@ world_t parser::make_scene() const {
         auto mesh_path = scene_path_.parent_path();
         mesh_path /= mesh_name;
         exist_or_abort(mesh_path, "mesh file");
-        assert(mesh_info[4].value<bool>().value() == true);
-        const auto mat_name = mesh_info[5].value<std::string>().value();
-        const auto &mesh_mat = mat_tbl.at(mat_name);
 
         const auto translate = parse_vec(*mesh_info[1].as_array(), 0, 3);
         const auto scale = mesh_info[2].value<double>().value();
@@ -238,13 +234,35 @@ world_t parser::make_scene() const {
         if (!reader.Warning().empty()) {
             std::cout << "TinyObjReader: " << reader.Warning();
         }
-        auto& attrib = reader.GetAttrib();
-        auto& shapes = reader.GetShapes();
-        // auto& materials = reader.GetMaterials();
-        
+        const auto& attrib = reader.GetAttrib();
+        const auto& shapes = reader.GetShapes();
+        const auto& materials = reader.GetMaterials();
+
+        std::vector<std::shared_ptr<material>> mat_vec;
+        const auto use_tbl_mat = mesh_info[4].value<bool>().value();
+        if (use_tbl_mat) {
+            const auto mat_name = mesh_info[5].value<std::string>().value();
+            mat_vec.push_back(mat_tbl.at(mat_name));
+        } else {
+            for (auto&& mat : materials) {
+                texture* tex;
+                if (mat.diffuse_texname.size() == 0) {
+                    const auto color = color_t{mat.diffuse};
+                    tex = new solid_color{color};
+                } else {
+                    const auto texpath = mesh_path.parent_path() / mat.diffuse_texname;
+                    tex = new image_texture{texpath.string()};
+                }
+                auto tex_sptr = std::shared_ptr<texture>{tex};
+                mat_vec.push_back(std::make_shared<lambertian>(tex_sptr));
+            }
+        }
+
+        // TODO: directly transform attrib.vertices and create triangles while looping
         std::vector<std::array<float, 3>> vertices;
         std::vector<tex_coords_t> tex_coords;
         std::vector<std::array<int, 3>> faces;
+        std::vector<int> mat_idx;
         // Loop over shapes
         for (size_t s = 0; s < shapes.size(); s++) {
             // Loop over faces(polygon)
@@ -274,16 +292,23 @@ world_t parser::make_scene() const {
                 index_offset += fv;
                 const int nvert = (int)vertices.size();
                 faces.push_back(std::array<int, 3>{nvert - 3, nvert - 2, nvert - 1});
-                // // per-face material
-                // shapes[s].mesh.material_ids[f];
+                // per-face material
+                if (use_tbl_mat) {
+                    mat_idx.push_back(0);
+                } else {
+                    mat_idx.push_back(shapes[s].mesh.material_ids[f]);
+                }
             }
         }
         transform_mesh(vertices, transform);
-        for (auto&& face : faces) {
-            const auto [v0, v1, v2] = face;
+        const int nface = (int)faces.size();
+        for (int i = 0; i < nface; i++) {
+            const auto [v0, v1, v2] = faces[i];
+            const int matidx = mat_idx[i];
             world.push_back(std::make_shared<triangle>(
                 point_t{vertices[v0].data()}, point_t{vertices[v1].data()}, point_t{vertices[v2].data()},
-                tex_coords[v0], tex_coords[v1], tex_coords[v2], mesh_mat));
+                tex_coords[v0], tex_coords[v1], tex_coords[v2], mat_vec[matidx])
+            );
         }
     });
 

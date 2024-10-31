@@ -25,6 +25,7 @@ materials = [
     ["mat-lam-face",        "lambertian",   true,   "tex-face"],
     ["mat-metal-silver",    "metal",        true,   "tex-silver", 0],   # metal: 镜面反射, 最后一个数字表示金属材质的粗糙程度
     ["mat-metal-earth",     "metal",        true,   "tex-earth", 0.1],
+    ["mat-metal-rabbit",    "metal",        true,   "tex-rice", 0.5],
     ["mat-liquid",          "dielectric",   false,  1.5],   # dielectric: 透射, 不能使用纹理, 最后一个数字表示折射率
     ["mat-light-white",     "light",        false,  4, 4, 4],   # light: 光源, 不能使用纹理, 后面三个数字分别表示RGB光强
 ]
@@ -52,13 +53,13 @@ triangles = [
 # 下例中第一个矩形有一个顶点在(-50,50,-50), 此顶点处的两条边向量分别为(100,0,0)和(0,0,100), 且第一条边用作纹理映射的u方向
 rectangles = [
     # "屋子"+顶部光照
-    [[-50, 50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 顶面
-    [[-60, 49.9, -60], [120, 0, 0], [0, 0, 120], "mat-light-white"], # 顶光
-    [[-50, 50, -50], [100, 0, 0], [0, -100, 0], "mat-lam-rice"], # 前面
-    [[-50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-red"], # 左侧面
-    [[50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-green"], # 右侧面
-    [[-50, -50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-board"], # 底面
-    [[-50, -50, 50], [100, 0, 0], [0, 100, 0], "mat-lam-rice"], # 后面
+    # [[-50, 50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 顶面
+    #[[-60, 49.9, -60], [120, 0, 0], [0, 0, 120], "mat-light-white"], # 顶光
+    #[[-50, 50, -50], [100, 0, 0], [0, -100, 0], "mat-lam-rice"], # 前面
+    #[[-50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-red"], # 左侧面
+    #[[50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-green"], # 右侧面
+    #[[-50, -50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-board"], # 底面
+    #[[-50, -50, 50], [100, 0, 0], [0, 100, 0], "mat-lam-rice"], # 后面
 
     # 一个立方体
     [[30, -50, 10], [0, 0, -10], [0, 10, 0], "mat-lam-face"],   # 右侧面
@@ -73,26 +74,26 @@ rectangles = [
 # "中心"定义为所有顶点的平均值, 平移量和距离是为了调整模型位置和大小设置的
 meshes = [
     # 下面的模型在调整后中心位于(0, -30, -10), 边缘到中心的最大距离为30, 模型绕Y轴旋转了30度
-    ["assets/bun_zipper.ply", "mat-lam-rabbit", [0, -30, -10], 30, [0, 30, 0]],
+    ["assets/bun_zipper.ply", [0, -30, -10], 30, [0, 30, 0], true, "mat-metal-rabbit"],
 ]
 
-envlight = "assets/envlight.jpg" # 背景图片
+envlight = "assets/envlight_town.jpg" # 背景图片
 
 [canvas]
-width = 1200             # 图片宽度
-height = 900            # 图片高度
+width = 1024             # 图片宽度
+height = 1024            # 图片高度
 # background = [1.0, 1.0, 1.0]
 # background = [0.01, 0.01, 0.01] # 背景色
 
 [options]
-samples_per_pixel = 1024 # 每个像素的采样数
-max_depth = 3         # 递归的最大层数
+samples_per_pixel = 4096 # 每个像素的采样数
+max_depth = 10         # 递归的最大层数
 use_bvh = true          # 是否使用bvh加速
 parallel = true         # 是否并行渲染
 
 [camera]
-lookfrom = [0, -10, 50]    # 相机位置
-lookat = [0, -10, -50]     # 焦点
+lookfrom = [-30, 30, 30]    # 相机位置
+lookat = [0, 0, 0]     # 焦点
 vup = [0, 1, 0]         # 相机上方向
 aperture = 0.0          # 相机"孔径", 孔径越大场景越模糊
-vfov = 120               # 竖直方向的视角, 角度值
+vfov = 90               # 竖直方向的视角, 角度值
