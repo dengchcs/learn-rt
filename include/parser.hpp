@@ -39,7 +39,7 @@ class parser {
      * @param vertices 网格点
      * @param trans 几何变换定义
      */
-    static void transform_mesh(std::vector<std::array<double, 3>> &vertices, transf &trans);
+    static void transform_mesh(std::vector<std::array<float, 3>> &vertices, transf &trans);
 
     using tex_tbl_t = std::unordered_map<std::string, std::shared_ptr<texture>>;
     [[nodiscard]] tex_tbl_t read_textures() const;

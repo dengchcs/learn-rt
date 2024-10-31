@@ -5,6 +5,7 @@ target("rt")
     add_includedirs("include")
     add_includedirs("deps")
     add_files("src/*.cpp")
+    add_defines("TINYOBJLOADER_IMPLEMENTATION ")
     set_warnings("all")
     
     if is_plat("linux") then

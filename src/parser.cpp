@@ -2,7 +2,8 @@
 
 #include <array>
 
-#include "happly.h"
+// #include "happly.h"
+#include "tiny_obj_loader.h"
 #include "rectangle.hpp"
 #include "sphere.hpp"
 #include "tracer.hpp"
@@ -16,16 +17,16 @@ std::vector<float> parser::parse_vec(const toml::array &arr, int start, int cnt)
     return vec;
 }
 
-void parser::transform_mesh(std::vector<std::array<double, 3>> &vertices, transf &trans) {
-    using vert_t = std::array<double, 3>;
+void parser::transform_mesh(std::vector<std::array<float, 3>> &vertices, transf &trans) {
+    using vert_t = std::array<float, 3>;
 
     auto rotate = [](const vert_t &vert, const vec3_t &rot) {
-        const auto cosx = cos(rot[0]);
-        const auto cosy = cos(rot[1]);
-        const auto cosz = cos(rot[2]);
-        const auto sinx = sin(rot[0]);
-        const auto siny = sin(rot[1]);
-        const auto sinz = sin(rot[2]);
+        const auto cosx = std::cos(rot[0]);
+        const auto cosy = std::cos(rot[1]);
+        const auto cosz = std::cos(rot[2]);
+        const auto sinx = std::sin(rot[0]);
+        const auto siny = std::sin(rot[1]);
+        const auto sinz = std::sin(rot[2]);
         auto res = vert;
         std::array<vert_t, 3> rot_mat = {
             vert_t{cosy * cosz, sinx * siny * cosz - cosx * sinz, cosx * siny * cosz + sinx * sinz},
@@ -195,7 +196,7 @@ world_t parser::make_scene() const {
     std::cout << "\treading triangles...\n";
     read_objects("triangles", [&](const toml::array &tri_info) {
         std::array<point_t, 3> vertices;
-        std::array<tex_coords_t, 3> tex_coords{};
+        std::array<tex_coords_t, 3> tex_coords;
         for (std::size_t i = 0; i < 3; i++) {
             const auto vert = parse_vec(*tri_info[i].as_array(), 0, 5);
             vertices.at(i) = {vert[0], vert[1], vert[2]};
@@ -204,7 +205,7 @@ world_t parser::make_scene() const {
         const auto mat_name = tri_info[3].value<std::string>().value();
         const auto &tri_mat = mat_tbl.at(mat_name);
         world.push_back(
-            std::make_shared<triangle>(vertices[0], vertices[1], vertices[2], tex_coords, tri_mat));
+            std::make_shared<triangle>(vertices[0], vertices[1], vertices[2], tex_coords[0], tex_coords[1], tex_coords[2], tri_mat));
     });
 
     std::cout << "\treading meshes...\n";
@@ -213,31 +214,76 @@ world_t parser::make_scene() const {
         auto mesh_path = scene_path_.parent_path();
         mesh_path /= mesh_name;
         exist_or_abort(mesh_path, "mesh file");
-        const auto mat_name = mesh_info[1].value<std::string>().value();
+        assert(mesh_info[4].value<bool>().value() == true);
+        const auto mat_name = mesh_info[5].value<std::string>().value();
         const auto &mesh_mat = mat_tbl.at(mat_name);
 
-        const auto translate = parse_vec(*mesh_info[2].as_array(), 0, 3);
-        const auto scale = mesh_info[3].value<double>().value();
-        const auto rotate = parse_vec(*mesh_info[4].as_array(), 0, 3);
+        const auto translate = parse_vec(*mesh_info[1].as_array(), 0, 3);
+        const auto scale = mesh_info[2].value<double>().value();
+        const auto rotate = parse_vec(*mesh_info[3].as_array(), 0, 3);
         transf transform{(float)scale, vec3_t{translate.data()}, vec3_t{rotate.data()}};
         for (int i = 0; i < 3; i++) {
             transform.rotate[i] *= (g_pi / g_pi_in_degree);
         }
 
-        happly::PLYData mesh_data(mesh_path.string());
-        auto vertices = mesh_data.getVertexPositions();
-        transform_mesh(vertices, transform);
+        tinyobj::ObjReader reader;
+        tinyobj::ObjReaderConfig reader_config;
+        reader_config.triangulate = true;
+        if (! reader.ParseFromFile(mesh_path.string(), reader_config)) {
+            if (!reader.Error().empty()) {
+                std::cerr << "TinyObjReader: " << reader.Error();
+            }
+            exit(1);
+        }
+        if (!reader.Warning().empty()) {
+            std::cout << "TinyObjReader: " << reader.Warning();
+        }
+        auto& attrib = reader.GetAttrib();
+        auto& shapes = reader.GetShapes();
+        // auto& materials = reader.GetMaterials();
+        
+        std::vector<std::array<float, 3>> vertices;
+        std::vector<tex_coords_t> tex_coords;
+        std::vector<std::array<int, 3>> faces;
+        // Loop over shapes
+        for (size_t s = 0; s < shapes.size(); s++) {
+            // Loop over faces(polygon)
+            size_t index_offset = 0;
+            for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+                size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+                assert(fv == 3); // only triangles are supported
 
-        std::array<tex_coords_t, 3> tex{};
-        const auto indices = mesh_data.getFaceIndices();
-        for (auto &&index : indices) {
-            const auto vert0 = vertices[index[0]];
-            const auto vert1 = vertices[index[1]];
-            const auto vert2 = vertices[index[2]];
-            const auto point0 = point_t((float)vert0[0], (float)vert0[1], (float)vert0[2]);
-            const auto point1 = point_t((float)vert1[0], (float)vert1[1], (float)vert1[2]);
-            const auto point2 = point_t((float)vert2[0], (float)vert2[1], (float)vert2[2]);
-            world.push_back(std::make_shared<triangle>(point0, point1, point2, tex, mesh_mat));
+                // Loop over vertices in the face.
+                for (size_t v = 0; v < fv; v++) {
+                    // access to vertex
+                    tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+                    tinyobj::real_t vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
+                    tinyobj::real_t vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
+                    tinyobj::real_t vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
+                    vertices.push_back(std::array<float, 3>{vx, vy, vz});
+
+                    // Check if `texcoord_index` is zero or positive. negative = no texcoord data
+                    if (idx.texcoord_index >= 0) {
+                        tinyobj::real_t tx = attrib.texcoords[2 * size_t(idx.texcoord_index) + 0];
+                        tinyobj::real_t ty = attrib.texcoords[2 * size_t(idx.texcoord_index) + 1];
+                        tex_coords.push_back(std::array<float, 2>{tx, ty});
+                    } else {
+                        tex_coords.push_back(std::array<float, 2>{0.0, 0.0});
+                    }
+                }
+                index_offset += fv;
+                const int nvert = (int)vertices.size();
+                faces.push_back(std::array<int, 3>{nvert - 3, nvert - 2, nvert - 1});
+                // // per-face material
+                // shapes[s].mesh.material_ids[f];
+            }
+        }
+        transform_mesh(vertices, transform);
+        for (auto&& face : faces) {
+            const auto [v0, v1, v2] = face;
+            world.push_back(std::make_shared<triangle>(
+                point_t{vertices[v0].data()}, point_t{vertices[v1].data()}, point_t{vertices[v2].data()},
+                tex_coords[v0], tex_coords[v1], tex_coords[v2], mesh_mat));
         }
     });
 

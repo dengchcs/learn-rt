@@ -17,8 +17,9 @@ class triangle : public hittable {
 
 public:
     triangle(const point_t &point0, const point_t &point1, const point_t &point2,
-             const std::array<tex_coords_t, 3> &tex_coords, std::shared_ptr<material> pmat)
-        : vertices_{point0, point1, point2}, pmat_(std::move(pmat)), tex_coords_{tex_coords} {
+             const tex_coords_t &tex_coords0, const tex_coords_t &tex_coords1, const tex_coords_t &tex_coords2,
+             std::shared_ptr<material> pmat)
+        : vertices_{point0, point1, point2}, pmat_(std::move(pmat)), tex_coords_{tex_coords0, tex_coords1, tex_coords2} {
         normal_ = (point1 - point0).cross(point2 - point1).normalized();
         if (normal_.len_sq() == 0) {
             std::cerr << "bad triangle: collinear edges\n";
