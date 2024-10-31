@@ -75,4 +75,8 @@ inline void exist_or_abort(const std::filesystem::path &path, const std::string 
     }
 }
 
+float srgb_to_linear(float srgb);
+
+float linear_to_srgb(float linear);
+
 #endif  // RT_UTILS_HPP

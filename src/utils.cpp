@@ -64,3 +64,11 @@ std::string current_time() {
     ss << std::put_time(ltime, "%H-%M-%S");
     return ss.str();
 }
+
+float srgb_to_linear(float srgb) {
+    return srgb <= 0.04045 ? srgb / 12.92 : std::pow((srgb + 0.055) / 1.055, 2.4);
+}
+
+float linear_to_srgb(float linear) {
+    return linear <= 0.0031308 ? 12.92 * linear : 1.055 * std::pow(linear, 1.0 / 2.4) - 0.055;
+}

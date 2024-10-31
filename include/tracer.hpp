@@ -27,44 +27,6 @@ public:
         // std::string envlight_path;
     };
 
-    struct envlight {
-        unsigned char *data;
-        int width, height, channels;
-        envlight(const std::string &path) {
-            data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-            if (!data) {
-                std::cerr << "failed to load envlight: " << path << '\n';
-                std::abort();
-            }
-        }
-        ~envlight() { stbi_image_free(data); }
-        color_t sample(const float u, const float v) const {
-            const float uwidth = u * width;
-            const float vheight = v * height;
-            const int x = std::clamp((int)uwidth, 0, width - 1);
-            const int y = std::clamp((int)vheight, 0, height - 1);
-
-            const float u2center = uwidth - (x + 0.5);
-            const float v2center = vheight - (y + 0.5);
-            const int x1 =  u2center > 0 ? std::min(x + 1, width - 1) : std::max(x - 1, 0);
-            const int y1 =  v2center > 0 ? std::min(y + 1, height - 1) : std::max(y - 1, 0);
-
-            const int index = (x + y * width) * channels;
-            const color_t color = {(float)data[index], (float)data[index + 1], (float)data[index + 2]};
-            const int index1 = (x1 + y * width) * channels;
-            const color_t color1 = {(float)data[index1], (float)data[index1 + 1], (float)data[index1 + 2]};
-            const auto ycolor = color * abs(u2center) + color1 * abs(1 - abs(u2center));
-            const int index2 = (x + y1 * width) * channels;
-            const color_t color2 = {(float)data[index2], (float)data[index2 + 1], (float)data[index2 + 2]};
-            const int index3 = (x1 + y1 * width) * channels;
-            const color_t color3 = {(float)data[index3], (float)data[index3 + 1], (float)data[index3 + 2]};
-            const auto y1color = color2 * abs(u2center) + color3 * abs(1 - abs(u2center));
-
-            auto lerped = ycolor * abs(v2center) + y1color * abs(1 - abs(v2center));
-            return lerped / 255.0;
-        }
-    };
-
     tracer(const config &conf, const camera &cam, const std::string& envlight_path)
         : config_(conf), cam_(cam), data_(config_.width * config_.height * 3), envlight_(envlight_path){}
 
@@ -72,7 +34,7 @@ private:
     config config_;
     camera cam_;
     std::vector<unsigned char> data_;
-    envlight envlight_;
+    image_texture envlight_;
 
 
     /**
@@ -83,7 +45,7 @@ private:
         const int index = (col + row * config_.width) * 3;
         for (int i = 0; i < 3; i++) {
             // Gamma Correction (gamma = 0.5), gamma越小图片越亮
-            const auto corrected = std::sqrt(pixel[i]);
+            const auto corrected = linear_to_srgb(pixel[i]);
             data_[index + i] = (int)(max_color * clamp(corrected, 0, 1));
         }
     }
@@ -117,8 +79,8 @@ private:
             const float elev = std::acos(direction.y());
             const float azim = std::atan2(direction.z(), direction.x());
             const float u = azim / (2 * g_pi) + 0.5;
-            const float v = elev / g_pi;
-            return envlight_.sample(u, v);
+            const float v = 1.0 - elev / g_pi;
+            return envlight_.color_at({u, v}, {g_max, g_max, g_max});
         }
         ray scattered;
         color_t attenuation;
