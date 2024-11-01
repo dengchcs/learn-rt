@@ -19,5 +19,5 @@ Ni 1.450000
 d 1.000000
 illum 2
 map_Kd Wood029_2K_Color.jpg
-map_Ns Wood029_2K_Roughness.jpg
+map_Pr Wood029_2K_Roughness.jpg
 map_Bump -bm 1.000000 Wood029_2K_NormalDX.jpg

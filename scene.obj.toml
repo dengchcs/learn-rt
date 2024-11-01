@@ -6,6 +6,7 @@ textures = [
     ["tex-blue",    "solid", 0, 0, 0.54],
     ["tex-rice",    "solid", 0.96, 0.96, 0.86],
     ["tex-silver",  "solid", 0.75, 0.75, 0.75],
+    ["tex-earth",   "image", "assets/earthmap.jpg"]
 ]
 
 materials = [
@@ -14,41 +15,51 @@ materials = [
     ["mat-lam-blue",        "lambertian",   true,   "tex-blue"],
     ["mat-lam-rice",        "lambertian",   true,   "tex-rice"],
     ["mat-metal-silver",    "metal",        true,   "tex-silver", 0.1],
+    ["mat-metal-earth",     "metal",        true,   "tex-earth", 0.05],
     ["mat-light-white",     "light",        false,  4, 4, 4],
+    ["mat-pbr-mirror",      "pbr",          false,  1.0, 1.0, 1.0, 0.9, 0.1],  # [..., metalic, roughness]
+    ["mat-pbr-earth",       "pbr",          true,  "tex-earth", 0.05, 0.99],  # [..., metalic, roughness]
 ]
 
 rectangles = [
     # "屋子"+顶部光照
     [[-50, 50, -50], [100, 0, 0], [0, 0, 100], "mat-lam-rice"], # 顶面
-    [[-20, 49.9, -20], [40, 0, 0], [0, 0, 40], "mat-light-white"], # 顶光
+    [[-30, 49.9, -30], [60, 0, 0], [0, 0, 60], "mat-light-white"], # 顶光
     [[-50, 50, -50], [100, 0, 0], [0, -100, 0], "mat-lam-rice"], # 前面
     [[-50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-red"], # 左侧面
     [[50, 50, -50], [0, -100, 0], [0, 0, 100], "mat-lam-green"], # 右侧面
-    [[-50, -50, -50], [100, 0, 0], [0, 0, 100], "mat-metal-silver"], # 底面
-    [[-50, -50, 50], [100, 0, 0], [0, 100, 0], "mat-lam-rice"], # 后面
+    [[-50, -50, -50], [100, 0, 0], [0, 0, 100], "mat-pbr-mirror"], # 底面
+
+    # [[-50, -50, 50], [100, 0, 0], [0, 100, 0], "mat-lam-rice"], # 后面
+]
+
+spheres = [
+    # [0, 0, 0, 25, "mat-pbr-earth"]
 ]
 
 # 三角面片模型路径, 材质(只支持纯色纹理), 中心平移量, 表面到中心点的最长距离, 绕XYZ轴的旋转度数(角度制), 是否使用此文件中定义的材质, 材质名称
 # "中心"定义为所有顶点的平均值, 平移量和距离是为了调整模型位置和大小设置的
 meshes = [
-    ["assets/nightstand/nightstand.obj", [0, -20, 0], 30, [0, 0, 0], false]
+    ["assets/nightstand/nightstand.obj", [0, -10, 0], 50, [0, 0, 0], false]
 ]
 
-envlight = "assets/envlight_town.jpg"
+envlight = "assets/envlight.jpg"
 
 [canvas]
 width = 1024
 height = 1024
-# background = [0.01, 0.01, 0.01]
+# width = 256
+# height = 256
 
 [options]
 samples_per_pixel = 4096
+# samples_per_pixel = 1024
 max_depth = 10
 use_bvh = true
 parallel = true
 
 [camera]
-lookfrom = [0, 20, 50]
+lookfrom = [20, 20, 50]
 lookat = [0, 0, 0]
 vup = [0, 1, 0]
 aperture = 0.0

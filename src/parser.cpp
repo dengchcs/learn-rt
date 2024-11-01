@@ -132,6 +132,21 @@ auto parser::read_materials(const tex_tbl_t &tex_tbl) const -> mat_tbl_t {
                 const auto rgb = parse_vec(mat_info, 3, 3);
                 mat_tbl.emplace(mat_name, std::make_shared<light>(color_t{rgb[0], rgb[1], rgb[2]}));
             }
+        } else if (mat_type == "pbr") {
+            const int info_len = mat_info.size();
+            float metalic = mat_info[info_len - 2].value<float>().value();
+            float roughness = mat_info[info_len - 1].value<float>().value();
+            auto metalic_tex = std::make_shared<solid_color>(metalic, 0.0, 0.0);
+            auto roughness_tex = std::make_shared<solid_color>(roughness, 0.0, 0.0);
+            std::shared_ptr<texture> diffuse;
+            if (use_tex) {
+                const auto tex_name = mat_info[3].value<std::string>().value();
+                diffuse = tex_tbl.at(tex_name);
+            } else {
+                const auto rgb = parse_vec(mat_info, 3, 3);
+                diffuse = std::make_shared<solid_color>(rgb[0], rgb[1], rgb[2]);
+            }
+            mat_tbl.emplace(mat_name, std::make_shared<pbr>(diffuse, metalic_tex, roughness_tex));
         } else {
             std::cerr << "unknown material: " << mat_type << "\n";
         }
@@ -237,16 +252,43 @@ world_t parser::make_scene() const {
             mesh_materials.push_back(mat_tbl.at(mat_name));
         } else {
             for (auto&& mat : materials) {
-                texture* tex;
+                texture* diffuse_ptr;
                 if (mat.diffuse_texname.size() == 0) {
+                    std::cout << "\tno diffuse texture, solid color only\n";
                     const auto color = color_t{mat.diffuse};
-                    tex = new solid_color{color};
+                    diffuse_ptr = new solid_color{color};
                 } else {
+                    std::cout << "\tdiffuse texture found\n";
                     const auto texpath = mesh_path.parent_path() / mat.diffuse_texname;
-                    tex = new image_texture{texpath.string()};
+                    diffuse_ptr = new image_texture{texpath.string()};
                 }
-                auto tex_sptr = std::shared_ptr<texture>{tex};
-                mesh_materials.push_back(std::make_shared<lambertian>(tex_sptr));
+                auto diffuse = std::shared_ptr<texture>{diffuse_ptr};
+                
+                texture* metalic_ptr;
+                if (mat.metallic_texname.size() == 0) {
+                    std::cout << "\tno metallic texture, solid color only\n";
+                    const auto color = color_t{mat.metallic, 0.0, 0.0};
+                    metalic_ptr = new solid_color{color};
+                } else {
+                    std::cout << "\tmetallic texture found\n";
+                    const auto texpath = mesh_path.parent_path() / mat.metallic_texname;
+                    metalic_ptr = new image_texture{texpath.string()};
+                }
+                auto metalic = std::shared_ptr<texture>{metalic_ptr};
+
+                texture* roughness_ptr;
+                if (mat.roughness_texname.size() == 0) {
+                    std::cout << "\tno roughness texture, solid color only\n";
+                    const auto color = color_t{mat.roughness, 0.0, 0.0};
+                    roughness_ptr = new solid_color{color};
+                } else {
+                    std::cout << "\troughness texture found\n";
+                    const auto texpath = mesh_path.parent_path() / mat.roughness_texname;
+                    roughness_ptr = new image_texture{texpath.string()};
+                }
+                auto roughness = std::shared_ptr<texture>{roughness_ptr};
+
+                mesh_materials.push_back(std::make_shared<pbr>(diffuse, metalic, roughness));
             }
         }
 

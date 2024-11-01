@@ -126,4 +126,23 @@ public:
     }
 };
 
+class pbr : public material {
+    std::shared_ptr<texture> diffuse_;
+    std::shared_ptr<texture> metallic_;
+    std::shared_ptr<texture> roughness_;
+
+public:
+    /**
+     * @param diffuse 漫反射贴图
+     * @param metallic 金属度贴图, 只有第一个通道有效
+     * @param roughness 粗糙度贴图, 只有第一个通道有效
+     */
+    pbr(std::shared_ptr<texture> diffuse, std::shared_ptr<texture> metallic,
+        std::shared_ptr<texture> roughness)
+        : diffuse_(std::move(diffuse)), metallic_(std::move(metallic)), roughness_(std::move(roughness)) {}
+
+    bool scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuation,
+                 ray &scattered) const override;
+};
+
 #endif  // RT_MATERIAL_HPP
