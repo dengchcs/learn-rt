@@ -16,55 +16,47 @@ std::vector<float> parser::parse_vec(const toml::array &arr, int start, int cnt)
     return vec;
 }
 
-void parser::transform_mesh(std::vector<std::array<float, 3>> &vertices, transf &trans) {
-    using vert_t = std::array<float, 3>;
-
-    auto rotate = [](const vert_t &vert, const vec3_t &rot) {
-        const auto cosx = std::cos(rot[0]);
-        const auto cosy = std::cos(rot[1]);
-        const auto cosz = std::cos(rot[2]);
-        const auto sinx = std::sin(rot[0]);
-        const auto siny = std::sin(rot[1]);
-        const auto sinz = std::sin(rot[2]);
+void parser::transform_mesh(std::vector<point_t> &vertices, transf &trans) {
+    const auto rot = trans.rotate;
+    const auto cosx = std::cos(rot[0]);
+    const auto cosy = std::cos(rot[1]);
+    const auto cosz = std::cos(rot[2]);
+    const auto sinx = std::sin(rot[0]);
+    const auto siny = std::sin(rot[1]);
+    const auto sinz = std::sin(rot[2]);
+    const std::array<vec3_t, 3> rot_mat = {
+        vec3_t{cosy * cosz, sinx * siny * cosz - cosx * sinz, cosx * siny * cosz + sinx * sinz},
+        {cosx * sinz, sinx * siny * sinz + cosx * cosz, cosx * siny * sinz - sinx * cosz},
+        {-siny, sinx * cosy, cosx * cosy}
+    };
+    auto rotate = [&rot_mat](const point_t &vert) {
         auto res = vert;
-        std::array<vert_t, 3> rot_mat = {
-            vert_t{cosy * cosz, sinx * siny * cosz - cosx * sinz, cosx * siny * cosz + sinx * sinz},
-            {cosx * sinz, sinx * siny * sinz + cosx * cosz, cosx * siny * sinz - sinx * cosz},
-            {-siny, sinx * cosy, cosx * cosy}};
         for (int i = 0; i < 3; i++) {
-            res[i] = std::inner_product(vert.begin(), vert.end(), rot_mat.at(i).begin(), 0.0);
+            res[i] = rot_mat[i][0] * vert[0] + rot_mat[i][1] * vert[1] + rot_mat[i][2] * vert[2];
+            // res[i] = std::inner_product(vert.begin(), vert.end(), rot_mat.at(i).begin(), 0.0);
         }
         return res;
     };
 
-    const auto num_vert = (int)vertices.size();
-    auto point_add = [](const vert_t &vert1, const vert_t &vert2) {
-        return vert_t{vert1[0] + vert2[0], vert1[1] + vert2[1], vert1[2] + vert2[2]};
-    };
     auto center = std::reduce(std::execution::par, vertices.begin(), vertices.end(),
-                              vert_t{0.0, 0.0, 0.0}, point_add);
+                              point_t{0.0, 0.0, 0.0}, std::plus<point_t>());
+    const auto num_vert = (int)vertices.size();
     center[0] /= num_vert, center[1] /= num_vert, center[2] /= num_vert;
-    auto distance = [](const vert_t &vert1, const vert_t &vert2) {
-        const auto diff0 = vert1[0] - vert2[0];
-        const auto diff1 = vert1[1] - vert2[1];
-        const auto diff2 = vert1[2] - vert2[2];
-        return std::sqrt(diff0 * diff0 + diff1 * diff1 + diff2 * diff2);
+    auto distance = [](const point_t &vert1, const point_t &vert2) {
+        const auto diff = vert1 - vert2;
+        return diff.len();
     };
     const auto farmost =
         std::max_element(std::execution::par, vertices.begin(), vertices.end(),
-                         [&](const vert_t &vert1, const vert_t vert2) {
+                         [&](const point_t &vert1, const point_t vert2) {
                              return distance(vert1, center) < distance(vert2, center);
                          });
     const auto dist = distance(*farmost, center);
     trans.scale /= dist;
     std::for_each(std::execution::par, vertices.begin(), vertices.end(), [&](auto &&vert) {
-        vert[0] = (vert[0] - center[0]) * trans.scale;
-        vert[1] = (vert[1] - center[1]) * trans.scale;
-        vert[2] = (vert[2] - center[2]) * trans.scale;
-        vert = rotate(vert, trans.rotate);
-        vert[0] += trans.translate[0];
-        vert[1] += trans.translate[1];
-        vert[2] += trans.translate[2];
+        vert = (vert - center) * trans.scale;
+        vert = rotate(vert);
+        vert += trans.translate;
     });
 }
 
@@ -238,11 +230,11 @@ world_t parser::make_scene() const {
         const auto& shapes = reader.GetShapes();
         const auto& materials = reader.GetMaterials();
 
-        std::vector<std::shared_ptr<material>> mat_vec;
+        std::vector<std::shared_ptr<material>> mesh_materials;
         const auto use_tbl_mat = mesh_info[4].value<bool>().value();
         if (use_tbl_mat) {
             const auto mat_name = mesh_info[5].value<std::string>().value();
-            mat_vec.push_back(mat_tbl.at(mat_name));
+            mesh_materials.push_back(mat_tbl.at(mat_name));
         } else {
             for (auto&& mat : materials) {
                 texture* tex;
@@ -254,14 +246,15 @@ world_t parser::make_scene() const {
                     tex = new image_texture{texpath.string()};
                 }
                 auto tex_sptr = std::shared_ptr<texture>{tex};
-                mat_vec.push_back(std::make_shared<lambertian>(tex_sptr));
+                mesh_materials.push_back(std::make_shared<lambertian>(tex_sptr));
             }
         }
 
         // TODO: directly transform attrib.vertices and create triangles while looping
-        std::vector<std::array<float, 3>> vertices;
+        std::vector<point_t> vertices;
         std::vector<tex_coords_t> tex_coords;
-        std::vector<std::array<int, 3>> faces;
+        using face_t = std::array<int, 3>;
+        std::vector<face_t> faces;
         std::vector<int> mat_idx;
         // Loop over shapes
         for (size_t s = 0; s < shapes.size(); s++) {
@@ -278,20 +271,20 @@ world_t parser::make_scene() const {
                     tinyobj::real_t vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
                     tinyobj::real_t vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
                     tinyobj::real_t vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
-                    vertices.push_back(std::array<float, 3>{vx, vy, vz});
+                    vertices.emplace_back(vx, vy, vz);
 
                     // Check if `texcoord_index` is zero or positive. negative = no texcoord data
                     if (idx.texcoord_index >= 0) {
                         tinyobj::real_t tx = attrib.texcoords[2 * size_t(idx.texcoord_index) + 0];
                         tinyobj::real_t ty = attrib.texcoords[2 * size_t(idx.texcoord_index) + 1];
-                        tex_coords.push_back(std::array<float, 2>{tx, ty});
+                        tex_coords.push_back(tex_coords_t{tx, ty});
                     } else {
-                        tex_coords.push_back(std::array<float, 2>{0.0, 0.0});
+                        tex_coords.push_back(tex_coords_t{0.0, 0.0});
                     }
                 }
                 index_offset += fv;
                 const int nvert = (int)vertices.size();
-                faces.push_back(std::array<int, 3>{nvert - 3, nvert - 2, nvert - 1});
+                faces.push_back(face_t{nvert - 3, nvert - 2, nvert - 1});
                 // per-face material
                 if (use_tbl_mat) {
                     mat_idx.push_back(0);
@@ -304,10 +297,10 @@ world_t parser::make_scene() const {
         const int nface = (int)faces.size();
         for (int i = 0; i < nface; i++) {
             const auto [v0, v1, v2] = faces[i];
-            const int matidx = mat_idx[i];
+            const int matidx = mat_idx[i];  // TODO: can be -1 when no material is assigned
             world.push_back(std::make_shared<triangle>(
-                point_t{vertices[v0].data()}, point_t{vertices[v1].data()}, point_t{vertices[v2].data()},
-                tex_coords[v0], tex_coords[v1], tex_coords[v2], mat_vec[matidx])
+                vertices[v0], vertices[v1], vertices[v2],
+                tex_coords[v0], tex_coords[v1], tex_coords[v2], mesh_materials[matidx])
             );
         }
     });
