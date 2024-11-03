@@ -1,7 +1,7 @@
 ## demo
 
 ![metalic ball under env light](demo/earth_metalic_env.png)
-![diffusive ball in cornell box](demo/earth_rough.png)
+![buddha in a open cornel box](demo/buddha.png)
 ![.obj nightstand in cornell box](demo/nightstand.png)
 
 ## 环境

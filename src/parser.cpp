@@ -357,8 +357,6 @@ tracer parser::make_tracer() const {
     const auto config = toml::parse_file(scene_path_.string());
     const int width = config["canvas"]["width"].value<int>().value();
     const int height = config["canvas"]["height"].value<int>().value();
-    // const auto bkg_vec = parse_vec(*config["canvas"]["background"].as_array(), 0, 3);
-    // const color_t bkg{bkg_vec.data()};
     const int samples_per_pixel = config["options"]["samples_per_pixel"].value<int>().value();
     const int max_depth = config["options"]["max_depth"].value<int>().value();
     const bool use_bvh = config["options"]["use_bvh"].value<bool>().value();
@@ -382,7 +380,7 @@ tracer parser::make_tracer() const {
     const auto envinfo = *config["envlight"].as_array();
     texture* envlight_ptr;
     if (envinfo[0].value<bool>().value()) {
-        const auto envlight_path = config["envlight"].value<std::string>().value();
+        const auto envlight_path = envinfo[1].value<std::string>().value();
         envlight_ptr = new image_texture{envlight_path};
     } else {
         const auto rgb = parse_vec(envinfo, 1, 3);

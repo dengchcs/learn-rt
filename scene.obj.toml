@@ -1,4 +1,4 @@
-# 详细配置说明参考scene.final.toml文件
+# 详细配置说明参考scene.sphere.toml文件
 
 textures = [
     ["tex-red",     "solid", 0.54, 0, 0],
@@ -43,7 +43,7 @@ meshes = [
     ["assets/nightstand/nightstand.obj", [0, -10, 0], 50, [0, 0, 0], false]
 ]
 
-envlight = "assets/envlight.jpg"
+envlight = [true, "assets/envlight_outdoor.jpg"]
 
 [canvas]
 width = 1024

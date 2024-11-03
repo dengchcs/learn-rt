@@ -112,7 +112,11 @@ bool pbr::scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuati
         pdf = cosine_weighted_sample(record.normal, wo);
     }
 
-    assert(wo.dot(record.normal) >= 0);
+    if (auto tmp = wo.dot(record.normal); tmp < 0) {
+        // this can happen because we're sampling the HALF VECTOR in the normal's hemisphere
+        attenuation = {0, 0, 0};
+        return false;
+    }
     const auto half = (wi + wo).normalized();
     const float coswin = wi.dot(record.normal);
     const float coswon = wo.dot(record.normal);
@@ -124,7 +128,7 @@ bool pbr::scatter(const ray &ray_in, const hit_record &record, vec3_t &attenuati
     F0 = F0 + (albedo - F0) * metalic;
     const auto F = fresnelSchlick(coswoh, F0);
     const auto G = G_Smith(coswin, coswon, roughness);
-    const auto out_specular = D * F * G / (4 * coswon * coswin);
+    const auto out_specular = D * F * G / (4 * coswon * coswin + 1e-6);
 
     auto ks = F;
     auto kd = color_t{1, 1, 1} - ks;

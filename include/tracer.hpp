@@ -23,8 +23,6 @@ public:
         int samples_per_pixel;
         int max_depth;
         bool use_bvh, parallel;
-        // color_t background;
-        // std::string envlight_path;
     };
 
     tracer(const config &conf, const camera &cam, std::unique_ptr<texture> envlight)
@@ -35,7 +33,6 @@ private:
     camera cam_;
     std::vector<unsigned char> data_;
     std::unique_ptr<texture> envlight_;
-
 
     /**
      * @brief 写入一个像素, 图像左上角为起点
