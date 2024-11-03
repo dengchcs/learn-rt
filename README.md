@@ -1,3 +1,9 @@
+## demo
+
+![metalic ball under env light](demo/earth_metalic_env.png)
+![diffusive ball in cornell box](demo/earth_rough.png)
+![.obj nightstand in cornell box](demo/nightstand.png)
+
 ## 环境
 
 在两套环境上作了测试
@@ -44,7 +50,7 @@ xmake -w            # 构建可执行文件
 # 假设可执行文件位于build下
 mkdir images  # 存放图片的文件夹
 cd build
-./rt.exe ../scene.final.toml ../images
+./rt.exe ../scene.obj.toml ../images
 ```
 
 注意场景配置文件中的纹理图片路径和模型文件路径都是相对于配置文件的, 不是相对可执行文件的
