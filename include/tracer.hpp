@@ -27,14 +27,14 @@ public:
         // std::string envlight_path;
     };
 
-    tracer(const config &conf, const camera &cam, const std::string& envlight_path)
-        : config_(conf), cam_(cam), data_(config_.width * config_.height * 3), envlight_(envlight_path){}
+    tracer(const config &conf, const camera &cam, std::unique_ptr<texture> envlight)
+        : config_(conf), cam_(cam), data_(config_.width * config_.height * 3), envlight_(std::move(envlight)){}
 
 private:
     config config_;
     camera cam_;
     std::vector<unsigned char> data_;
-    image_texture envlight_;
+    std::unique_ptr<texture> envlight_;
 
 
     /**
@@ -80,7 +80,7 @@ private:
             const float azim = std::atan2(direction.z(), direction.x());
             const float u = azim / (2 * g_pi) + 0.5;
             const float v = 1.0 - elev / g_pi;
-            return envlight_.color_at({u, v}, {g_max, g_max, g_max});
+            return envlight_->color_at({u, v}, {g_max, g_max, g_max});
         }
         ray scattered;
         color_t attenuation;

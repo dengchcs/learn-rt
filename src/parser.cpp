@@ -379,7 +379,16 @@ tracer parser::make_tracer() const {
     const float vfov = config["camera"]["vfov"].value<float>().value();
     camera cam{lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus};
 
-    const auto envlight_path = config["envlight"].value<std::string>().value();
+    const auto envinfo = *config["envlight"].as_array();
+    texture* envlight_ptr;
+    if (envinfo[0].value<bool>().value()) {
+        const auto envlight_path = config["envlight"].value<std::string>().value();
+        envlight_ptr = new image_texture{envlight_path};
+    } else {
+        const auto rgb = parse_vec(envinfo, 1, 3);
+        envlight_ptr = new solid_color{rgb[0], rgb[1], rgb[2]};
+    }
+    auto envlight = std::unique_ptr<texture>{envlight_ptr};
     std::cout << "tracer configuring: done.\n\n";
-    return {tconfig, cam, envlight_path};
+    return {tconfig, cam, std::move(envlight)};
 }
