@@ -43,7 +43,7 @@ meshes = [
     ["assets/nightstand/nightstand.obj", [0, -10, 0], 50, [0, 0, 0], false]
 ]
 
-envlight = [true, "assets/envlight_outdoor.jpg"]
+envlight = [true, "assets/envlight.jpg"]
 
 [canvas]
 width = 1024

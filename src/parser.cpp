@@ -381,7 +381,10 @@ tracer parser::make_tracer() const {
     texture* envlight_ptr;
     if (envinfo[0].value<bool>().value()) {
         const auto envlight_path = envinfo[1].value<std::string>().value();
-        envlight_ptr = new image_texture{envlight_path};
+        auto image_path = scene_path_.parent_path();
+        image_path /= envlight_path;
+        exist_or_abort(image_path, "envlight image file");
+        envlight_ptr = new image_texture{image_path.string()};
     } else {
         const auto rgb = parse_vec(envinfo, 1, 3);
         envlight_ptr = new solid_color{rgb[0], rgb[1], rgb[2]};

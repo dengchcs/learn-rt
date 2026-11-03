@@ -1,6 +1,7 @@
 #ifndef RT_TEXTURE_HPP
 #define RT_TEXTURE_HPP
 
+#include <cstdlib>
 #include <iostream>
 
 #include "common.hpp"
@@ -36,7 +37,8 @@ public:
         int comp_per_pixel = 3;
         auto *data_ = stbi_load(file.c_str(), &width_, &height_, &comp_per_pixel, comp_per_pixel);
         if (data_ == nullptr) {
-            std::cerr << "error loading texture\n";
+            std::cerr << "error loading texture: " << file << '\n';
+            std::abort();
         }
         dataf_ = new float[width_ * height_ * channels_];
         for (int i = 0; i < width_ * height_ * channels_; i++) {
