@@ -42,6 +42,17 @@ xmake -w            # 构建可执行文件
 即可.
 生成的二进制文件应该位于 `build` 文件夹下
 
+也可以使用 CMake (>= 3.16) 构建, 与 xmake 并存:
+
+```bash
+cmake -B build-cmake                 # 配置, 默认为 Release 模式
+cmake --build build-cmake --parallel # 构建可执行文件
+```
+
+生成的二进制文件为 `build-cmake/rt`. Windows 下使用 Visual Studio 等多配置生成器时,
+需要指定配置: `cmake --build build-cmake --config Release`, 二进制位于 `build-cmake/Release/rt.exe`.
+Linux 下会链接 tbb, 同样需要先安装 `libtbb-dev`.
+
 ## 运行
 
 传入场景配置文件运行: `rt <scene-path> <image-dir>`, 其中路径是相对于可执行文件的, 例如
